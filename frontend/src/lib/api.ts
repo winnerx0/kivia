@@ -123,7 +123,6 @@ async function apiFetch<T>(
     headers,
   });
 
-
   if (res.status === 401 && retry) {
     if (!refreshPromise) {
       refreshPromise = refreshTokens();
@@ -215,9 +214,7 @@ export async function verifyOTP(
   });
 }
 
-export async function resendOTP(
-  email: string,
-): Promise<{ message: string }> {
+export async function resendOTP(email: string): Promise<{ message: string }> {
   return apiFetch<{ message: string }>("/auth/resend-otp", {
     method: "POST",
     body: JSON.stringify({ email }),
@@ -298,6 +295,17 @@ export async function getLogs(
   );
 }
 
-export async function getLogsChart(): Promise<LogChart[]> {
-  return apiFetch<LogChart[]>("/api/v1/logs/chart");
+export async function getLogsChart(
+  projectId: string,
+  startDate?: string,
+  endDate?: string,
+): Promise<LogChart[]> {
+  const params = new URLSearchParams();
+  if (startDate) params.set("startDate", startDate);
+  if (endDate) params.set("endDate", endDate);
+  const query = params.toString();
+
+  return apiFetch<LogChart[]>(
+    `/api/v1/logs/chart/${projectId}${query ? `?${query}` : ""}`,
+  );
 }

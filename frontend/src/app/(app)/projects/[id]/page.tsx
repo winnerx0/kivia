@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { use } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -14,6 +14,8 @@ import {
   Activity,
   FolderX,
   ArrowLeft,
+  BarChart3,
+  LineChart,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -133,7 +135,7 @@ function ApiKeysTab({ projectId }: { projectId: string }) {
     },
     onError: (err) => {
       toast.error(
-        err instanceof Error ? err.message : "Failed to create API key"
+        err instanceof Error ? err.message : "Failed to create API key",
       );
     },
   });
@@ -145,9 +147,7 @@ function ApiKeysTab({ projectId }: { projectId: string }) {
       queryClient.invalidateQueries({ queryKey: ["apiKeys", projectId] });
     },
     onError: (err) => {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to revoke key"
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to revoke key");
     },
   });
 
@@ -181,13 +181,12 @@ function ApiKeysTab({ projectId }: { projectId: string }) {
       </div>
 
       {/* Create Key Dialog */}
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(open) => setDialogOpen(open)}
-      >
+      <Dialog open={dialogOpen} onOpenChange={(open) => setDialogOpen(open)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display">Create a new API key</DialogTitle>
+            <DialogTitle className="font-display">
+              Create a new API key
+            </DialogTitle>
             <DialogDescription>
               Give this key a descriptive name so you can identify it later.
             </DialogDescription>
@@ -295,7 +294,9 @@ function ApiKeysTab({ projectId }: { projectId: string }) {
           <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-muted">
             <KeyRound className="h-5 w-5 text-muted-foreground" />
           </div>
-          <p className="font-display text-sm font-medium mb-0.5">No API keys yet</p>
+          <p className="font-display text-sm font-medium mb-0.5">
+            No API keys yet
+          </p>
           <p className="text-xs text-muted-foreground mb-4">
             Create a key to start sending requests with the SDK.
           </p>
@@ -378,115 +379,410 @@ function ApiKeysTab({ projectId }: { projectId: string }) {
 
 const LOGS_PER_PAGE = 10;
 
-function RequestStatusChart({ chartData }: { chartData: LogChart[] }) {
-  if (!chartData.length) return null;
+type StatusKey = "2xx" | "3xx" | "4xx" | "5xx";
+type ChartType = "bar" | "line";
+type ChartRange = "7d" | "30d" | "8m" | "custom";
+
+const STATUS_KEYS: StatusKey[] = ["2xx", "3xx", "4xx", "5xx"];
+
+const STATUS_FILL: Record<StatusKey, string> = {
+  "2xx": "#34d399",
+  "3xx": "#38bdf8",
+  "4xx": "#fbbf24",
+  "5xx": "#f87171",
+};
+
+const STATUS_DOT: Record<StatusKey, string> = {
+  "2xx": "bg-emerald-400",
+  "3xx": "bg-sky-400",
+  "4xx": "bg-amber-400",
+  "5xx": "bg-red-400",
+};
+
+function niceMax(n: number): number {
+  if (n <= 0) return 4;
+  const exp = Math.floor(Math.log10(n));
+  const mag = Math.pow(10, exp);
+  const f = n / mag;
+  if (f <= 1.5) return 2 * mag;
+  if (f <= 3) return 4 * mag;
+  if (f <= 7) return 8 * mag;
+  return 10 * mag;
+}
+
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getPresetDateRange(range: Exclude<ChartRange, "custom">) {
+  const end = new Date();
+  const start = new Date(end);
+
+  if (range === "7d") {
+    start.setDate(start.getDate() - 6);
+  } else if (range === "30d") {
+    start.setDate(start.getDate() - 29);
+  } else {
+    start.setMonth(start.getMonth() - 8);
+  }
+
+  return {
+    startDate: toDateInputValue(start),
+    endDate: toDateInputValue(end),
+  };
+}
+
+function getSmoothPath(points: { x: number; y: number }[]) {
+  if (points.length === 0) return "";
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+
+  const commands = [`M ${points[0].x} ${points[0].y}`];
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(i - 1, 0)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(i + 2, points.length - 1)];
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    commands.push(`C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`);
+  }
+
+  return commands.join(" ");
+}
+
+function RequestStatusChart({
+  chartData,
+  chartType,
+}: {
+  chartData: LogChart[];
+  chartType: ChartType;
+}) {
+  const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(700);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    setChartWidth(el.clientWidth);
+    const ro = new ResizeObserver(([entry]) => {
+      setChartWidth(entry.contentRect.width);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const dailyStatusCounts = chartData.reduce(
     (acc, bucket) => {
       const dayKey = new Date(bucket.date).toISOString().slice(0, 10);
-
-      if (!acc[dayKey]) {
+      if (!acc[dayKey])
         acc[dayKey] = { "2xx": 0, "3xx": 0, "4xx": 0, "5xx": 0 };
-      }
-
       for (const log of bucket.logs) {
         const count = log.count ?? 1;
-        const status = log.status;
-        if (status >= 200 && status < 300) acc[dayKey]["2xx"] += count;
-        else if (status >= 300 && status < 400) acc[dayKey]["3xx"] += count;
-        else if (status >= 400 && status < 500) acc[dayKey]["4xx"] += count;
-        else if (status >= 500) acc[dayKey]["5xx"] += count;
+        const s = log.status;
+        if (s >= 200 && s < 300) acc[dayKey]["2xx"] += count;
+        else if (s >= 300 && s < 400) acc[dayKey]["3xx"] += count;
+        else if (s >= 400 && s < 500) acc[dayKey]["4xx"] += count;
+        else if (s >= 500) acc[dayKey]["5xx"] += count;
       }
-
       return acc;
     },
-    {} as Record<string, { "2xx": number; "3xx": number; "4xx": number; "5xx": number }>
+    {} as Record<string, Record<StatusKey, number>>,
   );
 
-  const dayKeys = Object.keys(dailyStatusCounts).sort((a, b) => a.localeCompare(b));
-
-  if (!dayKeys.length) return null;
-
-  const maxTotal = dayKeys.reduce((max, day) => {
-    const bucket = dailyStatusCounts[day];
-    const total = bucket["2xx"] + bucket["3xx"] + bucket["4xx"] + bucket["5xx"];
-    return Math.max(max, total);
+  const dayKeys = Object.keys(dailyStatusCounts).sort();
+  const hasData = dayKeys.length > 0;
+  const maxVal = dayKeys.reduce((max, day) => {
+    const b = dailyStatusCounts[day];
+    const dayMax =
+      chartType === "bar"
+        ? STATUS_KEYS.reduce((s, k) => s + b[k], 0)
+        : Math.max(...STATUS_KEYS.map((k) => b[k]));
+    return Math.max(max, dayMax);
   }, 0);
 
-  if (!maxTotal) return null;
+  const yMax = niceMax(maxVal);
+  const TICKS = 4;
+  const yTicks = Array.from(
+    { length: TICKS + 1 },
+    (_, i) => (i * yMax) / TICKS,
+  );
+
+  const ML = 44,
+    MR = 16,
+    MT = 12,
+    MB = 32;
+  const H = 180;
+  const CW = Math.max(chartWidth - ML - MR, 1);
+  const CH = H - MT - MB;
+  const N = Math.max(dayKeys.length, 1);
+  const slotW = CW / N;
+  const barW = Math.max(6, Math.min(slotW * 0.55, 40));
+  const yScale = (v: number) => CH - (v / yMax) * CH;
+  const xScale = (i: number) =>
+    dayKeys.length <= 1 ? CW / 2 : i * slotW + slotW / 2;
+  const fmtTick = (v: number) =>
+    v >= 1000
+      ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k`
+      : String(Math.round(v));
+  const fmtLabel = (d: string) =>
+    new Date(d + "T00:00:00").toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  const labelStep = N > 20 ? 5 : N > 10 ? 2 : 1;
 
   return (
-    <div className="mt-6 rounded-xl border bg-card px-4 py-3">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+    <div className="mt-6">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           Requests per day by status
         </p>
-      </div>
-      <div className="flex items-end gap-3 h-32">
-        {dayKeys.map((day) => {
-          const bucket = dailyStatusCounts[day];
-          const total = bucket["2xx"] + bucket["3xx"] + bucket["4xx"] + bucket["5xx"];
-
-          const h2xx = (bucket["2xx"] / maxTotal) * 100;
-          const h3xx = (bucket["3xx"] / maxTotal) * 100;
-          const h4xx = (bucket["4xx"] / maxTotal) * 100;
-          const h5xx = (bucket["5xx"] / maxTotal) * 100;
-
-          return (
-            <div key={day} className="flex flex-col items-center flex-1 min-w-10">
-              <div className="relative flex w-full flex-col justify-end rounded-md overflow-hidden bg-muted/60 border h-24">
-                {h2xx > 0 && (
-                  <div
-                    className="bg-emerald-400/80"
-                    style={{ height: `${h2xx}%` }}
-                  />
-                )}
-                {h3xx > 0 && (
-                  <div
-                    className="bg-sky-400/80"
-                    style={{ height: `${h3xx}%` }}
-                  />
-                )}
-                {h4xx > 0 && (
-                  <div
-                    className="bg-amber-400/80"
-                    style={{ height: `${h4xx}%` }}
-                  />
-                )}
-                {h5xx > 0 && (
-                  <div
-                    className="bg-red-400/80"
-                    style={{ height: `${h5xx}%` }}
-                  />
-                )}
-              </div>
-              <span className="mt-1 text-[10px] text-muted-foreground truncate max-w-full" title={day}>
-                {formatDate(day)}
-              </span>
-              <span className="text-[10px] text-muted-foreground/70">
-                {total}
-              </span>
+        <div className="flex gap-4">
+          {STATUS_KEYS.map((code) => (
+            <div
+              key={code}
+              className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
+            >
+              <span className={`h-2 w-2 rounded-full ${STATUS_DOT[code]}`} />
+              {code}
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
-      <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-emerald-400/80" />
-          <span>2xx</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-sky-400/80" />
-          <span>3xx</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-amber-400/80" />
-          <span>4xx</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-red-400/80" />
-          <span>5xx</span>
-        </div>
+
+      <div
+        ref={containerRef}
+        className="relative"
+        onMouseLeave={() => setHoveredDay(null)}
+      >
+        <svg width={chartWidth} height={H} className="overflow-visible block">
+          <g transform={`translate(${ML},${MT})`}>
+            {/* Y-axis gridlines and labels */}
+            {yTicks.map((tick) => {
+              const y = yScale(tick);
+              return (
+                <g key={tick}>
+                  <line
+                    x1={0}
+                    y1={y}
+                    x2={CW}
+                    y2={y}
+                    stroke="currentColor"
+                    strokeOpacity={tick === 0 ? 0.15 : 0.06}
+                    strokeWidth={1}
+                  />
+                  <text
+                    x={-8}
+                    y={y}
+                    textAnchor="end"
+                    dominantBaseline="middle"
+                    fontSize={10}
+                    fill="currentColor"
+                    fillOpacity={0.4}
+                  >
+                    {fmtTick(tick)}
+                  </text>
+                </g>
+              );
+            })}
+
+            {chartType === "line" &&
+              STATUS_KEYS.map((code) => {
+                const points = dayKeys.map((day, i) => ({
+                  x: xScale(i),
+                  y: yScale(dailyStatusCounts[day][code]),
+                  value: dailyStatusCounts[day][code],
+                }));
+                const path = getSmoothPath(points);
+
+                return (
+                  <g key={code}>
+                    {points.length > 1 && (
+                      <path
+                        d={path}
+                        fill="none"
+                        stroke={STATUS_FILL[code]}
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        opacity={0.9}
+                      />
+                    )}
+                    {points.map((point, i) => (
+                      <circle
+                        key={`${code}-${dayKeys[i]}`}
+                        cx={point.x}
+                        cy={point.y}
+                        r={hoveredDay === dayKeys[i] || point.value > 0 ? 3 : 0}
+                        fill={STATUS_FILL[code]}
+                        opacity={hoveredDay === dayKeys[i] ? 1 : 0.85}
+                      />
+                    ))}
+                  </g>
+                );
+              })}
+
+            {dayKeys.map((day, i) => {
+              const b = dailyStatusCounts[day];
+              const cx = xScale(i);
+              const x = cx - barW / 2;
+              const isHovered = hoveredDay === day;
+              const total = STATUS_KEYS.reduce((s, k) => s + b[k], 0);
+
+              const rawSegs = STATUS_KEYS.map((code) => ({
+                code,
+                count: b[code],
+                h: (b[code] / yMax) * CH,
+              })).filter((seg) => seg.count > 0);
+              const segments = (() => {
+                let yPos = CH;
+                return rawSegs.map((seg, si) => {
+                  yPos -= seg.h;
+                  return { ...seg, y: yPos, isTop: si === rawSegs.length - 1 };
+                });
+              })();
+
+              return (
+                <g key={day}>
+                  {/* Wide invisible hover zone */}
+                  <rect
+                    x={cx - slotW / 2}
+                    y={0}
+                    width={slotW}
+                    height={CH}
+                    fill="transparent"
+                    onMouseEnter={() => setHoveredDay(day)}
+                  />
+                  {/* Hover highlight column */}
+                  {isHovered && (
+                    <rect
+                      x={x - 4}
+                      y={0}
+                      width={barW + 8}
+                      height={CH}
+                      fill="currentColor"
+                      fillOpacity={0.05}
+                      rx={4}
+                    />
+                  )}
+                  {chartType === "bar" &&
+                    segments.map((seg) => (
+                      <rect
+                        key={seg.code}
+                        x={x}
+                        y={seg.y}
+                        width={barW}
+                        height={seg.h}
+                        fill={STATUS_FILL[seg.code]}
+                        fillOpacity={isHovered ? 1 : 0.85}
+                        rx={seg.isTop ? 2.5 : 0}
+                        ry={seg.isTop ? 2.5 : 0}
+                      />
+                    ))}
+                  {isHovered && total > 0 && chartType === "bar" && (
+                    <text
+                      x={cx}
+                      y={yScale(total) - 6}
+                      textAnchor="middle"
+                      fontSize={9}
+                      fontWeight={600}
+                      fill="currentColor"
+                      fillOpacity={0.65}
+                    >
+                      {total.toLocaleString()}
+                    </text>
+                  )}
+                  {/* X-axis label */}
+                  {i % labelStep === 0 && (
+                    <text
+                      x={cx}
+                      y={CH + 16}
+                      textAnchor="middle"
+                      fontSize={9}
+                      fill="currentColor"
+                      fillOpacity={isHovered ? 0.7 : 0.4}
+                    >
+                      {fmtLabel(day)}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </g>
+        </svg>
+
+        {!hasData && (
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+            No chart data for this date range.
+          </div>
+        )}
+
+        {/* Floating tooltip */}
+        {hoveredDay &&
+          (() => {
+            const b = dailyStatusCounts[hoveredDay];
+            const dayIdx = dayKeys.indexOf(hoveredDay);
+            const total = STATUS_KEYS.reduce((s, k) => s + b[k], 0);
+            const barCx = ML + xScale(dayIdx);
+            const flip = barCx / chartWidth > 0.6;
+
+            return (
+              <div
+                className="absolute top-0 z-20 pointer-events-none min-w-[9rem] rounded-lg border bg-popover text-popover-foreground shadow-md px-3 py-2.5 text-xs"
+                style={{
+                  left: barCx,
+                  transform: flip
+                    ? "translateX(calc(-100% - 10px))"
+                    : "translateX(10px)",
+                }}
+              >
+                <p className="font-semibold text-foreground mb-2">
+                  {new Date(hoveredDay + "T00:00:00").toLocaleDateString(
+                    "en-US",
+                    {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    },
+                  )}
+                </p>
+                <div className="space-y-1">
+                  {STATUS_KEYS.filter((c) => b[c] > 0).map((code) => (
+                    <div
+                      key={code}
+                      className="flex items-center justify-between gap-5"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[code]}`}
+                        />
+                        <span className="text-muted-foreground">{code}</span>
+                      </div>
+                      <span className="font-mono font-semibold tabular-nums">
+                        {b[code].toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-2 pt-2 border-t flex items-center justify-between gap-5">
+                  <span className="text-muted-foreground font-medium">
+                    Total
+                  </span>
+                  <span className="font-mono font-semibold tabular-nums">
+                    {total.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
       </div>
     </div>
   );
@@ -497,13 +793,18 @@ function LogsTab({ projectId }: { projectId: string }) {
   const [endDate, setEndDate] = useState("");
   const [statusCode, setStatusCode] = useState("");
   const [apiKeyType, setApiKeyType] = useState("");
+  const [chartRange, setChartRange] = useState<ChartRange>("7d");
+  const [chartStartDate, setChartStartDate] = useState("");
+  const [chartEndDate, setChartEndDate] = useState("");
+  const [chartType, setChartType] = useState<ChartType>("bar");
   const [page, setPage] = useState(1);
 
   const hasFilters = !!(startDate || endDate || statusCode || apiKeyType);
-  const { logs: streamedLogs, connected, clear: clearStream } = useLogStream(
-    projectId,
-    page === 1 && !hasFilters
-  );
+  const {
+    logs: streamedLogs,
+    connected,
+    clear: clearStream,
+  } = useLogStream(projectId, page === 1 && !hasFilters);
 
   const { data: apiKeys = [] } = useQuery({
     queryKey: ["apiKeys", projectId],
@@ -511,12 +812,12 @@ function LogsTab({ projectId }: { projectId: string }) {
   });
 
   // Build a lookup map: api_key UUID -> name
-  const apiKeyNameMap = new Map(
-    apiKeys.map((k: ApiKey) => [k.id, k.name])
-  );
+  const apiKeyNameMap = new Map(apiKeys.map((k: ApiKey) => [k.id, k.name]));
 
   const environments = Array.from(
-    new Set(apiKeys.filter((k: ApiKey) => !k.revoked).map((k: ApiKey) => k.name))
+    new Set(
+      apiKeys.filter((k: ApiKey) => !k.revoked).map((k: ApiKey) => k.name),
+    ),
   );
 
   const { data, isLoading, isFetching, refetch } = useQuery({
@@ -537,13 +838,33 @@ function LogsTab({ projectId }: { projectId: string }) {
         startDate || undefined,
         endDate || undefined,
         statusCode || undefined,
-        apiKeyType || undefined
+        apiKeyType || undefined,
       ),
   });
 
+  const presetChartRange =
+    chartRange === "custom" ? null : getPresetDateRange(chartRange);
+  const activeChartStartDate =
+    chartRange === "custom" ? chartStartDate : presetChartRange?.startDate;
+  const activeChartEndDate =
+    chartRange === "custom" ? chartEndDate : presetChartRange?.endDate;
+  const hasCustomChartRange =
+    chartRange === "custom" && !!(chartStartDate || chartEndDate);
+
   const { data: chartData = [], isLoading: chartLoading } = useQuery({
-    queryKey: ["logs-chart", projectId],
-    queryFn: () => getLogsChart(),
+    queryKey: [
+      "logs-chart",
+      projectId,
+      chartRange,
+      activeChartStartDate || undefined,
+      activeChartEndDate || undefined,
+    ],
+    queryFn: () =>
+      getLogsChart(
+        projectId,
+        activeChartStartDate || undefined,
+        activeChartEndDate || undefined,
+      ),
   });
 
   const paginatedLogs: Log[] = data?.logs ?? [];
@@ -553,9 +874,10 @@ function LogsTab({ projectId }: { projectId: string }) {
   // On page 1 with no filters, prepend streamed logs (deduplicated)
   const paginatedIds = new Set(paginatedLogs.map((l) => l.id));
   const uniqueStreamed = streamedLogs.filter((l) => !paginatedIds.has(l.id));
-  const logs: Log[] = page === 1 && !hasFilters
-    ? [...uniqueStreamed, ...paginatedLogs]
-    : paginatedLogs;
+  const logs: Log[] =
+    page === 1 && !hasFilters
+      ? [...uniqueStreamed, ...paginatedLogs]
+      : paginatedLogs;
 
   function handleFilter(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -587,7 +909,9 @@ function LogsTab({ projectId }: { projectId: string }) {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div>
-            <h2 className="font-display text-base font-semibold">Request Logs</h2>
+            <h2 className="font-display text-base font-semibold">
+              Request Logs
+            </h2>
           </div>
           {connected && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
@@ -675,12 +999,7 @@ function LogsTab({ projectId }: { projectId: string }) {
             ))}
           </select>
         </div>
-        <Button
-          type="submit"
-          size="sm"
-          variant="outline"
-          disabled={isFetching}
-        >
+        <Button type="submit" size="sm" variant="outline" disabled={isFetching}>
           Apply filter
         </Button>
         {(startDate || endDate || statusCode || apiKeyType) && (
@@ -702,13 +1021,111 @@ function LogsTab({ projectId }: { projectId: string }) {
         )}
       </form>
 
-      {chartLoading ? (
-        <Skeleton className="h-44 w-full rounded-xl mb-6" />
-      ) : (
-        <div className="mb-6">
-          <RequestStatusChart chartData={chartData} />
+      <div className="rounded-xl border bg-card px-5 py-4 mb-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Chart range
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="chart-range" className="text-xs font-medium">
+                Range
+              </Label>
+              <select
+                id="chart-range"
+                className="h-8 w-36 rounded-md border border-input bg-background px-2 text-sm"
+                value={chartRange}
+                onChange={(e) => setChartRange(e.target.value as ChartRange)}
+              >
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="8m">Last 8 months</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            {chartRange === "custom" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="chart-start-date"
+                    className="text-xs font-medium"
+                  >
+                    Start date
+                  </Label>
+                  <Input
+                    id="chart-start-date"
+                    type="date"
+                    className="w-40 h-8 text-sm"
+                    value={chartStartDate}
+                    onChange={(e) => setChartStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="chart-end-date"
+                    className="text-xs font-medium"
+                  >
+                    End date
+                  </Label>
+                  <Input
+                    id="chart-end-date"
+                    type="date"
+                    className="w-40 h-8 text-sm"
+                    value={chartEndDate}
+                    onChange={(e) => setChartEndDate(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+            {hasCustomChartRange && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="text-muted-foreground"
+                onClick={() => {
+                  setChartStartDate("");
+                  setChartEndDate("");
+                }}
+              >
+                Clear
+              </Button>
+            )}
+            <div className="flex h-8 rounded-md border bg-background p-0.5">
+              <Button
+                type="button"
+                size="sm"
+                variant={chartType === "bar" ? "secondary" : "ghost"}
+                className="h-7 px-2.5"
+                aria-pressed={chartType === "bar"}
+                onClick={() => setChartType("bar")}
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                Bar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={chartType === "line" ? "secondary" : "ghost"}
+                className="h-7 px-2.5"
+                aria-pressed={chartType === "line"}
+                onClick={() => setChartType("line")}
+              >
+                <LineChart className="h-3.5 w-3.5" />
+                Line
+              </Button>
+            </div>
+          </div>
         </div>
-      )}
+
+        {chartLoading ? (
+          <Skeleton className="mt-6 h-44 w-full rounded-xl" />
+        ) : (
+          <RequestStatusChart chartData={chartData} chartType={chartType} />
+        )}
+      </div>
 
       {/* Logs table */}
       {isLoading ? (
@@ -722,7 +1139,9 @@ function LogsTab({ projectId }: { projectId: string }) {
           <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-muted">
             <Activity className="h-5 w-5 text-muted-foreground" />
           </div>
-          <p className="font-display text-sm font-medium mb-0.5">No logs found</p>
+          <p className="font-display text-sm font-medium mb-0.5">
+            No logs found
+          </p>
           <p className="text-xs text-muted-foreground">
             No requests captured for the selected date range.
           </p>
@@ -797,7 +1216,11 @@ function LogsTab({ projectId }: { projectId: string }) {
                     <PaginationPrevious
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       aria-disabled={page <= 1}
-                      className={page <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      className={
+                        page <= 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
                     />
                   </PaginationItem>
                   {getPageNumbers().map((p, i) =>
@@ -815,13 +1238,19 @@ function LogsTab({ projectId }: { projectId: string }) {
                           {p}
                         </PaginationLink>
                       </PaginationItem>
-                    )
+                    ),
                   )}
                   <PaginationItem>
                     <PaginationNext
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
                       aria-disabled={page >= totalPages}
-                      className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      className={
+                        page >= totalPages
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
                     />
                   </PaginationItem>
                 </PaginationContent>
@@ -927,7 +1356,10 @@ export default function ProjectDetailPage({
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-1 rounded-lg bg-muted/40 p-1 w-fit animate-fade-in-up" style={{ animationDelay: "80ms" }}>
+      <div
+        className="mb-6 flex gap-1 rounded-lg bg-muted/40 p-1 w-fit animate-fade-in-up"
+        style={{ animationDelay: "80ms" }}
+      >
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}

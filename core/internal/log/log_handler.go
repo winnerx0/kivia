@@ -86,7 +86,19 @@ func (h loghandler) GetLogsForChart(c fiber.Ctx) error {
 
 	projectId := c.Params("projectId")
 
-	response, err := h.service.GetLogsForChart(projectId)
+	var startPtr, endPtr *string
+
+	startDate := c.Query("startDate")
+	if startDate != "" {
+		startPtr = &startDate
+	}
+
+	endDate := c.Query("endDate")
+	if endDate != "" {
+		endPtr = &endDate
+	}
+
+	response, err := h.service.GetLogsForChart(projectId, startPtr, endPtr)
 
 	if err != nil {
 		if errors.Is(err, utils.ErrProjectNotFound) {

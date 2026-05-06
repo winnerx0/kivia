@@ -40,5 +40,6 @@ type LogChart struct {
 }
 
 type LogBar struct {
-	Status int    `json:"status"`
+	Status int `json:"status"`
+	Count  int `json:"count"`
 }

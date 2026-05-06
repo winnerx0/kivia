@@ -39,7 +39,7 @@ func (r Repository) GetLogsByProjectId(projectId string, startDate *string, endD
 	WHERE api_keys.project_id = $1
 	  AND ($4::INTEGER IS NULL OR (logs.status >= $4 AND logs.status < $4 + 100))
 	  AND ($2::TIMESTAMPTZ IS NULL OR logs.timestamp >= $2::TIMESTAMPTZ)
-	  AND ($3::TIMESTAMPTZ IS NULL OR logs.timestamp <= $3::TIMESTAMPTZ)
+	  AND ($3::TIMESTAMPTZ IS NULL OR logs.timestamp < $3::TIMESTAMPTZ + INTERVAL '1 day')
 	  AND ($5::TEXT IS NULL OR api_keys.name = $5)
 	ORDER BY logs.timestamp DESC
 	LIMIT $6 OFFSET $7
@@ -91,18 +91,20 @@ func (r Repository) GetLogCountByProjectId(projectId string) int {
 
 }
 
-func (r Repository) GetLogsForChart(projectId string) ([]LogChart, error) {
+func (r Repository) GetLogsForChart(projectId string, startDate *string, endDate *string) ([]LogChart, error) {
 
 	query := `
 	SELECT DATE_TRUNC('day', logs.timestamp) as date, logs.status, COUNT(*) as count
 	FROM logs
 	JOIN api_keys ON logs.api_key_id = api_keys.id
 	WHERE api_keys.project_id = $1
+	  AND ($2::TIMESTAMPTZ IS NULL OR logs.timestamp >= $2::TIMESTAMPTZ)
+	  AND ($3::TIMESTAMPTZ IS NULL OR logs.timestamp <= $3::TIMESTAMPTZ)
 	GROUP BY date, logs.status
-	ORDER BY date DESC
+	ORDER BY date ASC
 	`
 
-	rows, err := r.db.Query(context.Background(), query, projectId)
+	rows, err := r.db.Query(context.Background(), query, projectId, startDate, endDate)
 
 	if err != nil {
 		return []LogChart{}, err
@@ -126,12 +128,12 @@ func (r Repository) GetLogsForChart(projectId string) ([]LogChart, error) {
 		if chart, exists := chartsMap[date]; exists {
 			chartsMap[date] = LogChart{
 				Date: chart.Date,
-				Logs: append(chart.Logs, LogBar{Status: status}),
+				Logs: append(chart.Logs, LogBar{Status: status, Count: count}),
 			}
 		} else {
 			chartsMap[date] = LogChart{
 				Date: date,
-				Logs: []LogBar{{Status: status}},
+				Logs: []LogBar{{Status: status, Count: count}},
 			}
 		}
 	}

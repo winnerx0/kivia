@@ -23,7 +23,7 @@ import (
 type Logservice struct {
 	repo           *Repository
 	apiKeyRepo     *apikey.Repository
-	projectRepo 	*project.Repository
+	projectRepo    *project.Repository
 	rabbitMQClient *rabbitmq.RabbitMQClient
 	eventServer    *sse.EventServer
 }
@@ -32,7 +32,7 @@ func NewLogService(repo *Repository, apiKeyRepo *apikey.Repository, projectRepo 
 	return &Logservice{
 		repo:           repo,
 		apiKeyRepo:     apiKeyRepo,
-		projectRepo:      projectRepo,
+		projectRepo:    projectRepo,
 		rabbitMQClient: rabbitMQClient,
 		eventServer:    eventServer,
 	}
@@ -160,7 +160,7 @@ func (s Logservice) LogConsumer(ctx context.Context) error {
 
 }
 
-func (s Logservice) GetLogsForChart(projectId string) ([]LogChart, error) {
+func (s Logservice) GetLogsForChart(projectId string, startDate *string, endDate *string) ([]LogChart, error) {
 
 	projectExists, err := s.projectRepo.ExistsById(projectId)
 
@@ -168,7 +168,7 @@ func (s Logservice) GetLogsForChart(projectId string) ([]LogChart, error) {
 		return []LogChart{}, utils.ErrProjectNotFound
 	}
 
-	logs, err := s.repo.GetLogsForChart(projectId)
+	logs, err := s.repo.GetLogsForChart(projectId, startDate, endDate)
 
 	if err != nil {
 		return []LogChart{}, err
