@@ -381,7 +381,7 @@ const LOGS_PER_PAGE = 10;
 
 type StatusKey = "2xx" | "3xx" | "4xx" | "5xx";
 type ChartType = "bar" | "line";
-type ChartRange = "7d" | "30d" | "8m" | "custom";
+type ChartRange = "7d" | "30d" | "6m" | "custom";
 
 const STATUS_KEYS: StatusKey[] = ["2xx", "3xx", "4xx", "5xx"];
 
@@ -426,7 +426,7 @@ function getPresetDateRange(range: Exclude<ChartRange, "custom">) {
   } else if (range === "30d") {
     start.setDate(start.getDate() - 29);
   } else {
-    start.setMonth(start.getMonth() - 8);
+    start.setMonth(start.getMonth() - 6);
   }
 
   return {
@@ -460,9 +460,13 @@ function getSmoothPath(points: { x: number; y: number }[]) {
 function RequestStatusChart({
   chartData,
   chartType,
+  startDate,
+  endDate,
 }: {
   chartData: LogChart[];
   chartType: ChartType;
+  startDate?: string;
+  endDate?: string;
 }) {
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -481,7 +485,8 @@ function RequestStatusChart({
 
   const dailyStatusCounts = chartData.reduce(
     (acc, bucket) => {
-      const dayKey = new Date(bucket.date).toISOString().slice(0, 10);
+      const bd = new Date(bucket.date);
+      const dayKey = `${bd.getFullYear()}-${String(bd.getMonth() + 1).padStart(2, "0")}-${String(bd.getDate()).padStart(2, "0")}`;
       if (!acc[dayKey])
         acc[dayKey] = { "2xx": 0, "3xx": 0, "4xx": 0, "5xx": 0 };
       for (const log of bucket.logs) {
@@ -497,8 +502,30 @@ function RequestStatusChart({
     {} as Record<string, Record<StatusKey, number>>,
   );
 
-  const dayKeys = Object.keys(dailyStatusCounts).sort();
-  const hasData = dayKeys.length > 0;
+  let dayKeys = Object.keys(dailyStatusCounts).sort();
+  if (startDate && endDate) {
+    const start = new Date(startDate + "T00:00:00");
+    const end = new Date(endDate + "T00:00:00");
+    if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end) {
+      const filled: string[] = [];
+      const cursor = new Date(start);
+      while (cursor <= end) {
+        const y = cursor.getFullYear();
+        const m = String(cursor.getMonth() + 1).padStart(2, "0");
+        const d = String(cursor.getDate()).padStart(2, "0");
+        const key = `${y}-${m}-${d}`;
+        filled.push(key);
+        if (!dailyStatusCounts[key]) {
+          dailyStatusCounts[key] = { "2xx": 0, "3xx": 0, "4xx": 0, "5xx": 0 };
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      dayKeys = filled;
+    }
+  }
+  const hasData = dayKeys.some((d) =>
+    STATUS_KEYS.some((k) => dailyStatusCounts[d][k] > 0),
+  );
   const maxVal = dayKeys.reduce((max, day) => {
     const b = dailyStatusCounts[day];
     const dayMax =
@@ -524,7 +551,7 @@ function RequestStatusChart({
   const CH = H - MT - MB;
   const N = Math.max(dayKeys.length, 1);
   const slotW = CW / N;
-  const barW = Math.max(6, Math.min(slotW * 0.55, 40));
+  const barW = Math.max(6, slotW * 0.7);
   const yScale = (v: number) => CH - (v / yMax) * CH;
   const xScale = (i: number) =>
     dayKeys.length <= 1 ? CW / 2 : i * slotW + slotW / 2;
@@ -935,6 +962,117 @@ function LogsTab({ projectId }: { projectId: string }) {
         </Button>
       </div>
 
+      <div className="rounded-xl border bg-card px-5 py-4 mb-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Chart range
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="chart-range" className="text-xs font-medium">
+                Range
+              </Label>
+              <select
+                id="chart-range"
+                className="h-8 w-36 rounded-md border border-input bg-background px-2 text-sm"
+                value={chartRange}
+                onChange={(e) => setChartRange(e.target.value as ChartRange)}
+              >
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="6m">Last 6 months</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+            {chartRange === "custom" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="chart-start-date"
+                    className="text-xs font-medium"
+                  >
+                    Start date
+                  </Label>
+                  <Input
+                    id="chart-start-date"
+                    type="date"
+                    className="w-40 h-8 text-sm"
+                    value={chartStartDate}
+                    onChange={(e) => setChartStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="chart-end-date"
+                    className="text-xs font-medium"
+                  >
+                    End date
+                  </Label>
+                  <Input
+                    id="chart-end-date"
+                    type="date"
+                    className="w-40 h-8 text-sm"
+                    value={chartEndDate}
+                    onChange={(e) => setChartEndDate(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+            {hasCustomChartRange && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="text-muted-foreground"
+                onClick={() => {
+                  setChartStartDate("");
+                  setChartEndDate("");
+                }}
+              >
+                Clear
+              </Button>
+            )}
+            <div className="flex h-8 rounded-md border bg-background p-0.5">
+              <Button
+                type="button"
+                size="sm"
+                variant={chartType === "bar" ? "secondary" : "ghost"}
+                className="h-7 px-2.5"
+                aria-pressed={chartType === "bar"}
+                onClick={() => setChartType("bar")}
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                Bar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={chartType === "line" ? "secondary" : "ghost"}
+                className="h-7 px-2.5"
+                aria-pressed={chartType === "line"}
+                onClick={() => setChartType("line")}
+              >
+                <LineChart className="h-3.5 w-3.5" />
+                Line
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {chartLoading ? (
+          <Skeleton className="mt-6 h-44 w-full rounded-xl" />
+        ) : (
+          <RequestStatusChart
+            chartData={chartData}
+            chartType={chartType}
+            startDate={activeChartStartDate || undefined}
+            endDate={activeChartEndDate || undefined}
+          />
+        )}
+      </div>
+
       {/* Date filter */}
       <form
         onSubmit={handleFilter}
@@ -1020,112 +1158,6 @@ function LogsTab({ projectId }: { projectId: string }) {
           </Button>
         )}
       </form>
-
-      <div className="rounded-xl border bg-card px-5 py-4 mb-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Chart range
-            </p>
-          </div>
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="chart-range" className="text-xs font-medium">
-                Range
-              </Label>
-              <select
-                id="chart-range"
-                className="h-8 w-36 rounded-md border border-input bg-background px-2 text-sm"
-                value={chartRange}
-                onChange={(e) => setChartRange(e.target.value as ChartRange)}
-              >
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="8m">Last 8 months</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-            {chartRange === "custom" && (
-              <>
-                <div className="space-y-1.5">
-                  <Label
-                    htmlFor="chart-start-date"
-                    className="text-xs font-medium"
-                  >
-                    Start date
-                  </Label>
-                  <Input
-                    id="chart-start-date"
-                    type="date"
-                    className="w-40 h-8 text-sm"
-                    value={chartStartDate}
-                    onChange={(e) => setChartStartDate(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label
-                    htmlFor="chart-end-date"
-                    className="text-xs font-medium"
-                  >
-                    End date
-                  </Label>
-                  <Input
-                    id="chart-end-date"
-                    type="date"
-                    className="w-40 h-8 text-sm"
-                    value={chartEndDate}
-                    onChange={(e) => setChartEndDate(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-            {hasCustomChartRange && (
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="text-muted-foreground"
-                onClick={() => {
-                  setChartStartDate("");
-                  setChartEndDate("");
-                }}
-              >
-                Clear
-              </Button>
-            )}
-            <div className="flex h-8 rounded-md border bg-background p-0.5">
-              <Button
-                type="button"
-                size="sm"
-                variant={chartType === "bar" ? "secondary" : "ghost"}
-                className="h-7 px-2.5"
-                aria-pressed={chartType === "bar"}
-                onClick={() => setChartType("bar")}
-              >
-                <BarChart3 className="h-3.5 w-3.5" />
-                Bar
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={chartType === "line" ? "secondary" : "ghost"}
-                className="h-7 px-2.5"
-                aria-pressed={chartType === "line"}
-                onClick={() => setChartType("line")}
-              >
-                <LineChart className="h-3.5 w-3.5" />
-                Line
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {chartLoading ? (
-          <Skeleton className="mt-6 h-44 w-full rounded-xl" />
-        ) : (
-          <RequestStatusChart chartData={chartData} chartType={chartType} />
-        )}
-      </div>
 
       {/* Logs table */}
       {isLoading ? (
