@@ -98,8 +98,8 @@ func (r Repository) GetLogsForChart(projectId string, startDate *string, endDate
 	FROM logs
 	JOIN api_keys ON logs.api_key_id = api_keys.id
 	WHERE api_keys.project_id = $1
-	AND ($2::TIMESTAMPTZ IS NULL OR logs.timestamp >= $2::TIMESTAMPTZ)
-	AND ($3::TIMESTAMPTZ IS NULL OR logs.timestamp <= $3::TIMESTAMPTZ)
+	AND ($2::DATE IS NULL OR logs.timestamp::DATE >= $2::DATE)
+	AND ($3::DATE IS NULL OR logs.timestamp::DATE <= $3::DATE)
 	GROUP BY date, logs.status
 	ORDER BY date ASC
 	`
