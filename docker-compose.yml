@@ -35,7 +35,9 @@ services:
       rabbitmq:
         condition: service_healthy
   nginx:
-    build: './nginx'
+    image: "nginx:trixie-perl"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
     ports:
       - '80:80'
     depends_on:

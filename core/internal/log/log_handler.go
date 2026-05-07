@@ -86,14 +86,18 @@ func (h loghandler) GetLogsForChart(c fiber.Ctx) error {
 
 	projectId := c.Params("projectId")
 
-	var startPtr, endPtr *string
+	var startPtr *string
+
+	var endPtr *string
 
 	startDate := c.Query("startDate")
+
 	if startDate != "" {
 		startPtr = &startDate
 	}
 
 	endDate := c.Query("endDate")
+
 	if endDate != "" {
 		endPtr = &endDate
 	}
