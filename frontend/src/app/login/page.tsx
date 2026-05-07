@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "sonner";
-import { Zap, Activity, Shield, BarChart3 } from "lucide-react";
+import { Activity, Shield, BarChart3 } from "lucide-react";
 import { login, BASE_URL } from "@/lib/api";
 import { setTokens } from "@/lib/auth";
 import GuestGuard from "@/components/GuestGuard";
@@ -68,9 +69,14 @@ export default function LoginPage() {
 
         <div className="relative z-10">
           <Link href="/" className="inline-flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 transition-colors group-hover:bg-white/20">
-              <Zap className="h-5 w-5" />
-            </div>
+            <Image
+              src="/logo.svg"
+              alt="Kivia logo"
+              width={36}
+              height={36}
+              priority
+              className="rounded-xl transition-transform group-hover:scale-105"
+            />
             <span className="text-xl font-display font-bold tracking-tight">Kivia</span>
           </Link>
         </div>
@@ -117,9 +123,14 @@ export default function LoginPage() {
             href="/"
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors lg:hidden"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Zap className="h-4 w-4" />
-            </div>
+            <Image
+              src="/logo.svg"
+              alt="Kivia logo"
+              width={32}
+              height={32}
+              priority
+              className="rounded-lg"
+            />
             <span className="font-display font-semibold text-foreground">Kivia</span>
           </Link>
         </div>
