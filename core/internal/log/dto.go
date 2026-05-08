@@ -11,7 +11,7 @@ type createLogRequest struct {
 
 	Timestamp time.Time `json:"timestamp" validate:"required"`
 
-	Latency int `json:"latency" validate:"required"`
+	Latency *int `json:"latency" validate:"required"`
 }
 
 type PaginatedLogResponse struct {
