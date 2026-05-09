@@ -49,7 +49,7 @@ export interface Log {
   id: string;
   path: string;
   status: number;
-  ip_address: string;
+  location: string;
   timestamp: string;
   latency: number;
   api_key: string;

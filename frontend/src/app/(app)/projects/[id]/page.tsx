@@ -1194,7 +1194,7 @@ function LogsTab({ projectId }: { projectId: string }) {
                     API Key
                   </TableHead>
                   <TableHead className="font-display font-semibold text-xs uppercase tracking-wider">
-                    IP Address
+                    Location
                   </TableHead>
                   <TableHead className="font-display font-semibold text-xs uppercase tracking-wider">
                     Latency
@@ -1222,7 +1222,7 @@ function LogsTab({ projectId }: { projectId: string }) {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground font-mono">
-                      {log.ip_address}
+                      {log.location}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground tabular-nums">
                       {log.latency}
