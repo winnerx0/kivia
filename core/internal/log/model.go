@@ -10,7 +10,7 @@ type Log struct {
 	
 	Status int `json:"status"`
 	
-	IPAddress string `json:"ip_address,omitempty"`
+	Location string `json:"location,omitempty"`
 
 	Timestamp time.Time `json:"timestamp"`
 	

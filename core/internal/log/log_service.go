@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 
 	logger "log"
@@ -56,12 +57,37 @@ func (s Logservice) CreateLog(createLogRequest createLogRequest, apiKey string) 
 		return err
 	}
 
-	latency := fmt.Sprintf("%d ms", createLogRequest.Latency)
+	latency := fmt.Sprintf("%d ms", *createLogRequest.Latency)
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s", "http://ip-api.com/json", createLogRequest.IPAddress), nil)
+
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	type Location struct {
+		Country string `json:"country"`
+		City    string `json:"city"`
+	}
+
+	var location Location
+
+	if err := json.NewDecoder(resp.Body).Decode(&location); err != nil {
+		return err
+	}
 
 	log := Log{
 		Id:        uuid.New().String(),
 		Path:      createLogRequest.Path,
-		IPAddress: createLogRequest.IPAddress,
+		Location:  location.City + ", " + location.Country,
 		Status:    createLogRequest.Status,
 		Timestamp: createLogRequest.Timestamp,
 		Latency:   latency,

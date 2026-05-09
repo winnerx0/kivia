@@ -29,7 +29,7 @@ type LogResponse struct {
 	Path      string    `json:"path"`
 	Latency   string    `json:"latency"`
 	Status    int       `json:"status"`
-	IPAddress string    `json:"ip_address,omitempty"`
+	Location  string    `json:"location,omitempty"`
 	Timestamp time.Time `json:"timestamp"`
 	ApiKey    string    `json:"api_key"`
 }

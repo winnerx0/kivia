@@ -1,0 +1,3 @@
+ALTER TABLE logs ADD COLUMN location VARCHAR(100);
+
+ALTER TABLE logs DROP COLUMN IF EXISTS ip_address;

@@ -22,10 +22,10 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 func (r Repository) Save(log Log) error {
 
 	query := `
-	INSERT INTO logs (path, latency, status, ip_address, timestamp, api_key_id) VALUES ($1, $2, $3, $4, $5, $6)
+	INSERT INTO logs (path, latency, status, location, timestamp, api_key_id) VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
-	_, err := r.db.Exec(context.Background(), query, log.Path, log.Latency, log.Status, log.IPAddress, log.Timestamp, log.ApiKey)
+	_, err := r.db.Exec(context.Background(), query, log.Path, log.Latency, log.Status, log.Location, log.Timestamp, log.ApiKey)
 
 	return err
 }
@@ -33,7 +33,7 @@ func (r Repository) Save(log Log) error {
 func (r Repository) GetLogsByProjectId(projectId string, startDate *string, endDate *string, statusCode *int, apiKeyType *string, page int, limit int) ([]LogResponse, error) {
 
 	query := `
-	SELECT logs.id, logs.path, logs.latency, logs.status, logs.ip_address, logs.timestamp, api_keys.name
+	SELECT logs.id, logs.path, logs.latency, logs.status, logs.location, logs.timestamp, api_keys.name
 	FROM logs
 	JOIN api_keys ON logs.api_key_id = api_keys.id
 	WHERE api_keys.project_id = $1
@@ -60,7 +60,7 @@ func (r Repository) GetLogsByProjectId(projectId string, startDate *string, endD
 
 	for rows.Next() {
 		var log LogResponse
-		err := rows.Scan(&log.Id, &log.Path, &log.Latency, &log.Status, &log.IPAddress, &log.Timestamp, &log.ApiKey)
+		err := rows.Scan(&log.Id, &log.Path, &log.Latency, &log.Status, &log.Location, &log.Timestamp, &log.ApiKey)
 
 		if err != nil {
 			fmt.Println("error ", err)
