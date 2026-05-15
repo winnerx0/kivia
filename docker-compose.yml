@@ -2,6 +2,21 @@ name: kivia
 
 services:
 
+  migrate:
+    image: migrate/migrate:v4.19.0
+    container_name: kivia_migrate
+    volumes:
+      - ./core/migrations:/migrations:ro
+    command:
+      - -path
+      - /migrations
+      - -database
+      - ${DATABASE_URL}
+      - up
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   core:
     build: './core'
     ports:
@@ -26,6 +41,8 @@ services:
       SENDER_NAME: ${SENDER_NAME}
       KIVIA_API_KEY: ${KIVIA_API_KEY}
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       rabbitmq:
         condition: service_healthy
       postgres:

@@ -50,7 +50,7 @@ Your App + SDK
 Create a `.env` file in the repo root. It is ignored by git.
 
 ```env
-DATABASE_URL=postgresql://postgres:password@postgres:5432/kivia
+DATABASE_URL=postgresql://postgres:password@postgres:5432/kivia?sslmode=disable
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=password
 POSTGRES_DB=kivia
@@ -71,6 +71,7 @@ CERTBOT_EMAIL=admin@example.com
 ```
 
 `core` and `email_service` both read from the root `.env`; their service-specific ports are set by Docker Compose.
+The `migrate` service applies `core/migrations` before `core` starts.
 
 ### Local Run
 

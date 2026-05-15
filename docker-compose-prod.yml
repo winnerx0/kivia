@@ -2,6 +2,24 @@ name: kivia
 
 services:
 
+  migrate:
+    image: migrate/migrate:v4.19.0
+    container_name: kivia_migrate
+    env_file:
+      - .env
+    volumes:
+      - ./core/migrations:/migrations:ro
+    command:
+      - -path
+      - /migrations
+      - -database
+      - ${DATABASE_URL}
+      - up
+    mem_limit: 128m
+    cpus: 0.25
+    networks:
+      - internal
+
   core:
     build: './core'
     ports:
@@ -12,6 +30,8 @@ services:
     environment:
       PORT: 8081
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       rabbitmq:
         condition: service_healthy
       # postgres:
