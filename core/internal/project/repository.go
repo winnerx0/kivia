@@ -63,8 +63,8 @@ func (r Repository) ExistsById(id string) (bool, error) {
 	row := r.db.QueryRow(context.Background(), query, id)
 
 	err := row.Scan(&exists)
-	
-	if errors.Is(err, pgx.ErrNoRows){
+
+	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
 
@@ -76,7 +76,7 @@ func (r Repository) FindProjectIdByApiKey(apiKey string) (string, error) {
 	var projectId string
 
 	query := `
-	SELECT projects.id FROM projects JOIN api_keys ON api_keys.project_id = projects.id WHERE api_keys.key = $1
+	SELECT projects.id FROM projects JOIN api_keys ON api_keys.project_id = projects.id WHERE api_keys.key = $1 AND api_keys.revoked = false AND api_keys.deleted_at IS NULL
 	`
 
 	row := r.db.QueryRow(context.Background(), query, apiKey)
@@ -93,7 +93,7 @@ func (r Repository) FindAllByUserId(userId string) ([]ProjectResponse, error) {
 	query := `
 	SELECT projects.id, projects.name, COUNT(api_keys.id), projects.user_id, projects.created_at 
 	FROM projects
-	LEFT JOIN api_keys ON api_keys.project_id = projects.id
+	LEFT JOIN api_keys ON api_keys.project_id = projects.id AND api_keys.deleted_at IS NULL
 	WHERE projects.user_id = $1
 	GROUP BY projects.id
 	`

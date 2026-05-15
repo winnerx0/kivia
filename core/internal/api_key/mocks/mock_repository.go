@@ -36,6 +36,11 @@ func (m *MockApiKeyRepository) RevokeApiKey(id string) error {
 	return args.Error(0)
 }
 
+func (m *MockApiKeyRepository) DeleteApiKey(id string) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
 func (m *MockApiKeyRepository) FindProjectIdByKey(apiKey string) (string, error) {
 	args := m.Called(apiKey)
 	return args.String(0), args.Error(1)

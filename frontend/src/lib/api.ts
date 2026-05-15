@@ -272,6 +272,12 @@ export async function revokeApiKey(id: string): Promise<void> {
   });
 }
 
+export async function deleteApiKey(id: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/api-keys/${id}`, {
+    method: "DELETE",
+  });
+}
+
 // ── Log endpoints ────────────────────────────────────────────────────────────
 
 export async function getLogs(

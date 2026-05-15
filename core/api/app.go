@@ -134,6 +134,8 @@ func NewServer(cfg config.Config, rabbitMQClient *rabbitmq.RabbitMQClient) *Serv
 
 	apiKeyRouter.Patch("/revoke/:id", apiKeyHandler.RevokeApiKey)
 
+	apiKeyRouter.Delete("/:id", apiKeyHandler.DeleteApiKey)
+
 	// log routes
 	logRouter := v1.Group("/logs")
 

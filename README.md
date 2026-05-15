@@ -124,6 +124,7 @@ Production compose exposes NGINX on `http://localhost:80` and `https://localhost
 | POST | `/api/v1/api-keys/create` | Create an API key |
 | GET | `/api/v1/api-keys/all/:projectId` | List project API keys |
 | PATCH | `/api/v1/api-keys/revoke/:id` | Revoke an API key |
+| DELETE | `/api/v1/api-keys/:id` | Delete an API key |
 | GET | `/api/v1/logs/all/:projectId` | Get paginated logs |
 | GET | `/api/v1/logs/stream/:projectId` | Stream logs over SSE |
 | GET | `/api/v1/logs/chart/:projectId` | Get log chart data |

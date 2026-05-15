@@ -24,7 +24,7 @@ func NewApiKeyService(repo ApiKeyRepository, projectRepo project.ProjectReposito
 }
 
 func (s apiKeyService) CreateApiKey(apiKey *ApiKey) (createApiKeyResponse, error) {
-	
+
 	projectExists, err := s.projectRepo.ExistsById(apiKey.ProjectId)
 
 	if err != nil {
@@ -34,7 +34,6 @@ func (s apiKeyService) CreateApiKey(apiKey *ApiKey) (createApiKeyResponse, error
 	if !projectExists {
 		return createApiKeyResponse{}, utils.ErrProjectNotFound
 	}
-	
 
 	key, err := generateAPIKey()
 
@@ -87,10 +86,34 @@ func (s apiKeyService) RevokeApiKey(apiKeyId string, userId string) error {
 	if apiKey.UserId != userId {
 		return utils.ErrUnauthorized
 	}
-	
+
+	if apiKey.DeletedAt != nil {
+		return utils.ErrApiKeyNotFound
+	}
+
 	if apiKey.Revoked {
 		return utils.ErrInvalidRovoke
 	}
 
 	return s.repo.RevokeApiKey(apiKeyId)
+}
+
+func (s apiKeyService) DeleteApiKey(apiKeyId string, userId string) error {
+	apiKey, err := s.repo.FindById(apiKeyId)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return utils.ErrApiKeyNotFound
+		}
+		return err
+	}
+
+	if apiKey.UserId != userId {
+		return utils.ErrUnauthorized
+	}
+
+	if apiKey.DeletedAt != nil {
+		return utils.ErrApiKeyNotFound
+	}
+
+	return s.repo.DeleteApiKey(apiKeyId)
 }

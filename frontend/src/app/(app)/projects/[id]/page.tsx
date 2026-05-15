@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   BarChart3,
   LineChart,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -23,6 +24,7 @@ import {
   getApiKeys,
   createApiKey,
   revokeApiKey,
+  deleteApiKey,
   getLogs,
   getLogsChart,
   type ApiKey,
@@ -116,6 +118,7 @@ function ApiKeysTab({ projectId }: { projectId: string }) {
   const [newKey, setNewKey] = useState<string | null>(null);
   const [showKeyDialog, setShowKeyDialog] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [keyToDelete, setKeyToDelete] = useState<ApiKey | null>(null);
 
   const envPresets = ["production", "staging", "development", "test"];
 
@@ -148,6 +151,19 @@ function ApiKeysTab({ projectId }: { projectId: string }) {
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to revoke key");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteApiKey(id),
+    onSuccess: () => {
+      toast.success("API key deleted");
+      setKeyToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["apiKeys", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to delete key");
     },
   });
 
@@ -282,6 +298,42 @@ function ApiKeysTab({ projectId }: { projectId: string }) {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={keyToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setKeyToDelete(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Delete API key?</DialogTitle>
+            <DialogDescription>
+              This removes {keyToDelete?.name} from the project. Existing logs
+              stay available, but this key can no longer authenticate requests.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setKeyToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteMutation.isPending || !keyToDelete}
+              onClick={() => {
+                if (keyToDelete) deleteMutation.mutate(keyToDelete.id);
+              }}
+            >
+              {deleteMutation.isPending ? "Deleting\u2026" : "Delete key"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Keys Table */}
       {isLoading ? (
         <div className="space-y-2">
@@ -352,18 +404,32 @@ function ApiKeysTab({ projectId }: { projectId: string }) {
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDate(key.created_at)}
                   </TableCell>
-                  <TableCell className="text-right">
-                    {!key.revoked && (
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-2">
+                      {!key.revoked && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={revokeMutation.isPending}
+                          onClick={() => revokeMutation.mutate(key.id)}
+                          className="text-destructive border-destructive/30 hover:bg-destructive hover:text-white"
+                        >
+                          {revokeMutation.isPending
+                            ? "Revoking\u2026"
+                            : "Revoke"}
+                        </Button>
+                      )}
                       <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={revokeMutation.isPending}
-                        onClick={() => revokeMutation.mutate(key.id)}
-                        className="text-destructive border-destructive/30 hover:bg-destructive hover:text-white"
+                        variant="destructive"
+                        size="icon"
+                        disabled={deleteMutation.isPending}
+                        onClick={() => setKeyToDelete(key)}
+                        aria-label={`Delete ${key.name} API key`}
+                        title="Delete key"
                       >
-                        {revokeMutation.isPending ? "Revoking\u2026" : "Revoke"}
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
