@@ -37,25 +37,6 @@ jobs:
       - name: Build backend
         run: go build ./...
 
-  frontend:
-    name: Set up frontend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-
-      - name: Install frontend dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Build frontend
-        run: bun run build
-
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
