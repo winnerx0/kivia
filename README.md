@@ -4,19 +4,50 @@ API observability platform for capturing, queueing, storing, and viewing HTTP re
 
 ## Architecture
 
-```text
-Your App + SDK
-      |
-      v
-    NGINX
-      |
-      +--> Core API (Go/Fiber)
-      |        |
-      |        +--> PostgreSQL
-      |        |
-      |        +--> RabbitMQ log_queue
-      |
-      +--> Email Service (Go/Fiber)
+```mermaid
+flowchart LR
+  dashboardUser[Dashboard User]
+  sdkApp[Application + Kivia SDK]
+
+  subgraph client[Client Layer]
+    frontend[Next.js Frontend]
+    sdk[SDK Middleware]
+  end
+
+  subgraph edge[Edge Layer]
+    nginx[NGINX Reverse Proxy]
+  end
+
+  subgraph backend[Backend Services]
+    core[Core API<br/>Go + Fiber]
+    email[Email Service<br/>Go + Fiber]
+    sse[SSE Event Server]
+    consumer[Log Queue Consumer]
+  end
+
+  subgraph data[Data Layer]
+    postgres[(PostgreSQL)]
+    rabbit[(RabbitMQ Log Queue)]
+  end
+
+  migrate[Migration Service]
+
+  dashboardUser --> frontend
+  frontend -->|JWT protected dashboard APIs| nginx
+  sdkApp --> sdk
+  sdk -->|API key protected log events| nginx
+
+  nginx --> core
+  core -->|users, projects, API keys, logs| postgres
+  core -->|OTP and transactional email| email
+  core -->|publish log event| rabbit
+
+  rabbit --> consumer
+  consumer -->|persist logs| postgres
+  consumer -->|broadcast new logs| sse
+  sse -->|/api/v1/logs/stream/:projectId| frontend
+
+  migrate -->|apply SQL migrations before startup| postgres
 ```
 
 - **NGINX**: reverse proxy, CORS, rate limiting, and auth request checks.
@@ -37,6 +68,103 @@ Your App + SDK
 | Proxy | NGINX |
 | Auth | JWT access and refresh tokens |
 | Containers | Docker Compose |
+
+## System Design
+
+Kivia is designed as a small observability platform with clear separation between user-facing dashboard traffic, authenticated management APIs, SDK log ingestion, asynchronous processing, and email delivery.
+
+### Components
+
+| Component | Responsibility |
+| --- | --- |
+| Frontend | Next.js dashboard for authentication, project management, API key management, log browsing, charts, and live log updates. |
+| NGINX | Public edge proxy for the backend services. It centralizes routing, CORS handling, rate limiting, TLS in production, and API key auth checks for protected ingestion routes. |
+| Core API | Main Go/Fiber service. Owns users, auth, projects, API keys, log ingestion, log retrieval, chart aggregation, and SSE streams. |
+| PostgreSQL | System of record for users, refresh tokens, projects, API keys, request logs, and email verification state. |
+| RabbitMQ | Buffer between synchronous SDK ingestion and durable log storage. This keeps SDK-facing requests fast and isolates short database slowdowns from client applications. |
+| Email Service | Go/Fiber service responsible for OTP and transactional email workflows. |
+| Migration Service | One-shot container that applies SQL migrations before the core service starts. |
+
+### Request Flow
+
+```text
+Dashboard user
+    |
+    v
+Frontend
+    |
+    v
+NGINX
+    |
+    v
+Core API
+    |
+    +--> PostgreSQL
+    |
+    +--> Email Service
+```
+
+Dashboard requests use JWT access tokens. The core API validates the token, authorizes ownership by `user_id`, and reads or writes project, key, user, and log data in PostgreSQL.
+
+```text
+Application using Kivia SDK
+    |
+    v
+NGINX auth check
+    |
+    v
+Core API log ingestion
+    |
+    v
+RabbitMQ log_queue
+    |
+    v
+Core API consumer
+    |
+    +--> PostgreSQL logs
+    |
+    +--> SSE broadcast to dashboard clients
+```
+
+SDK log ingestion is API-key protected. The core API validates the key, resolves the project, publishes the log event to RabbitMQ, and returns quickly. A consumer persists log events and broadcasts new entries to any active SSE clients for the project.
+
+### Data Model
+
+```text
+users
+  ├── refresh_tokens
+  ├── email_verifications
+  ├── projects
+  │     ├── api_keys
+  │     └── logs through api_keys
+```
+
+- `users` own projects and authentication state.
+- `projects` group API keys and request logs by application or environment.
+- `api_keys` authenticate SDK traffic and are scoped to one project.
+- `logs` store captured request metadata such as path, status, location, timestamp, latency, and API key reference.
+- `refresh_tokens` support session renewal and token revocation.
+- `email_verifications` store OTP verification state.
+
+### Auth And Authorization
+
+- Dashboard routes use JWT access tokens and refresh tokens.
+- Project, API key, and log reads are scoped to the authenticated user.
+- SDK ingestion uses API keys instead of user JWTs.
+- Revoked or deleted API keys cannot authenticate log ingestion.
+- Production traffic is intended to enter through NGINX, keeping internal services off the public network.
+
+### Realtime Logs
+
+The dashboard uses Server-Sent Events through `/api/v1/logs/stream/:projectId`. The SSE server keeps project-scoped client channels in memory and broadcasts new persisted log events only to clients subscribed to that project.
+
+### Reliability Boundaries
+
+- RabbitMQ absorbs ingestion bursts and decouples SDK request latency from database writes.
+- PostgreSQL remains the durable source of truth.
+- Migrations run before the core service starts so schema changes are applied deterministically.
+- NGINX provides edge-level rate limiting and request routing.
+- If no dashboard clients are connected, logs are still persisted and can be queried later.
 
 ## Getting Started
 
@@ -122,6 +250,7 @@ Production compose exposes NGINX on `http://localhost:80` and `https://localhost
 | DELETE | `/api/v1/user/me` | Delete current user |
 | POST | `/api/v1/projects/create` | Create a project |
 | GET | `/api/v1/projects/all` | List projects |
+| DELETE | `/api/v1/projects/:projectId` | Delete a project |
 | POST | `/api/v1/api-keys/create` | Create an API key |
 | GET | `/api/v1/api-keys/all/:projectId` | List project API keys |
 | PATCH | `/api/v1/api-keys/revoke/:id` | Revoke an API key |
