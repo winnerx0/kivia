@@ -250,6 +250,12 @@ export async function getProjects(): Promise<Project[]> {
   return apiFetch<Project[]>("/api/v1/projects/all");
 }
 
+export async function deleteProject(projectId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/projects/${projectId}`, {
+    method: "DELETE",
+  });
+}
+
 // ── API Key endpoints ────────────────────────────────────────────────────────
 
 export async function createApiKey(

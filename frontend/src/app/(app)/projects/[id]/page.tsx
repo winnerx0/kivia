@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { use } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Copy,
   Check,
@@ -23,6 +24,7 @@ import {
   getProjects,
   getApiKeys,
   createApiKey,
+  deleteProject,
   revokeApiKey,
   deleteApiKey,
   getLogs,
@@ -1376,7 +1378,10 @@ export default function ProjectDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: projectId } = use(params);
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("api-keys");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: projects = [], isLoading: loadingProject } = useQuery({
     queryKey: ["projects"],
@@ -1384,6 +1389,20 @@ export default function ProjectDetailPage({
   });
 
   const project = projects.find((p) => p.id === projectId) ?? null;
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: () => deleteProject(projectId),
+    onSuccess: () => {
+      toast.success("Project deleted");
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      router.push("/projects");
+    },
+    onError: (err) => {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete project",
+      );
+    },
+  });
 
   if (!loadingProject && !project) {
     return (
@@ -1433,14 +1452,14 @@ export default function ProjectDetailPage({
   return (
     <div className="p-6 md:p-10 w-full">
       {/* Header */}
-      <div className="mb-6 animate-fade-in-up">
+      <div className="mb-6 flex items-start justify-between gap-4 animate-fade-in-up">
         {loadingProject ? (
-          <>
+          <div>
             <Skeleton className="h-7 w-48 mb-1.5" />
             <Skeleton className="h-4 w-32" />
-          </>
+          </div>
         ) : (
-          <>
+          <div>
             <h1 className="font-display text-2xl font-bold tracking-tight">
               {project?.name ?? "Project"}
             </h1>
@@ -1449,9 +1468,50 @@ export default function ProjectDetailPage({
                 Created {formatDate(project.created_at)}
               </p>
             )}
-          </>
+          </div>
+        )}
+        {project && (
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-1.5" />
+            Delete project
+          </Button>
         )}
       </div>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Delete project?</DialogTitle>
+            <DialogDescription>
+              This permanently deletes {project?.name} and its API keys. This
+              action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteProjectMutation.isPending}
+              onClick={() => deleteProjectMutation.mutate()}
+            >
+              {deleteProjectMutation.isPending
+                ? "Deleting\u2026"
+                : "Delete project"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Tabs */}
       <div

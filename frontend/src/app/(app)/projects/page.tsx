@@ -9,9 +9,10 @@ import {
   KeyRound,
   Calendar,
   ArrowRight,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { getProjects, createProject } from "@/lib/api";
+import { getProjects, createProject, deleteProject, type Project } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +38,7 @@ export default function ProjectsPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
@@ -54,6 +56,20 @@ export default function ProjectsPage() {
     onError: (err) => {
       toast.error(
         err instanceof Error ? err.message : "Failed to create project"
+      );
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (projectId: string) => deleteProject(projectId),
+    onSuccess: () => {
+      toast.success("Project deleted");
+      setProjectToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+    onError: (err) => {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete project"
       );
     },
   });
@@ -118,6 +134,42 @@ export default function ProjectsPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={projectToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setProjectToDelete(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Delete project?</DialogTitle>
+            <DialogDescription>
+              This permanently deletes {projectToDelete?.name} and its API keys.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setProjectToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteMutation.isPending || !projectToDelete}
+              onClick={() => {
+                if (projectToDelete) deleteMutation.mutate(projectToDelete.id);
+              }}
+            >
+              {deleteMutation.isPending ? "Deleting\u2026" : "Delete project"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
@@ -147,13 +199,35 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-fade-in-up" style={{ animationDelay: "80ms" }}>
           {projects.map((project) => (
-            <Link key={project.id} href={`/projects/${project.id}`}>
-              <div className="group relative rounded-xl border bg-card p-5 hover:border-primary/30 hover:shadow-md hover:shadow-primary/[0.03] transition-all cursor-pointer h-full flex flex-col">
-                <div className="flex items-start justify-between mb-4">
+            <div
+              key={project.id}
+              className="group relative rounded-xl border bg-card p-5 hover:border-primary/30 hover:shadow-md hover:shadow-primary/[0.03] transition-all h-full flex flex-col"
+            >
+              <Link
+                href={`/projects/${project.id}`}
+                className="absolute inset-0 z-0 rounded-xl"
+                aria-label={`Open ${project.name}`}
+              />
+              <div className="relative z-10 flex h-full flex-col pointer-events-none">
+                <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
                     <FolderOpen className="h-5 w-5" />
                   </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon-sm"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => setProjectToDelete(project)}
+                      aria-label={`Delete ${project.name}`}
+                      title="Delete project"
+                      className="pointer-events-auto opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
                 </div>
                 <div className="flex-1">
                   <h3 className="font-display font-semibold text-sm mb-1.5 leading-snug">
@@ -172,7 +246,7 @@ export default function ProjectsPage() {
                   </span>
                 </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}
