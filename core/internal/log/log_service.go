@@ -45,10 +45,14 @@ func (s Logservice) CreateLog(createLogRequest createLogRequest, apiKey string) 
 
 	apiKeyHex := hex.EncodeToString(apiKeyHash[:])
 
-	apiKeyId, err := s.apiKeyRepo.FindIdById(apiKeyHex)
+	apiKeyId, revoked, err := s.apiKeyRepo.FindIdByKey(apiKeyHex)
 
 	if err != nil {
 		return err
+	}
+
+	if revoked {
+		return utils.ErrInvalidApiKey
 	}
 
 	projectId, err := s.apiKeyRepo.FindProjectIdByKey(apiKeyHex)

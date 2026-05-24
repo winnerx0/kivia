@@ -33,7 +33,7 @@ func NewServer(cfg config.Config, rabbitMQClient *rabbitmq.RabbitMQClient) *Serv
 
 	app := fiber.New(fiber.Config{
 		AppName:        "Kivia",
-		ReadBufferSize: 8192,
+		ReadBufferSize: 8192, // 8MB
 	})
 
 	logger := slog.Default()
@@ -124,6 +124,8 @@ func NewServer(cfg config.Config, rabbitMQClient *rabbitmq.RabbitMQClient) *Serv
 	projectRouter.Post("/create", projectHandler.CreateProject)
 
 	projectRouter.Get("/all", projectHandler.GetAllProjects)
+
+	projectRouter.Delete("/:projectId", projectHandler.DeleteProject)
 
 	// api key routes
 	apiKeyRouter := v1.Group("/api-keys", middleware.AuthMiddlware)

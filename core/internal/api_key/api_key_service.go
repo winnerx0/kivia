@@ -87,10 +87,6 @@ func (s apiKeyService) RevokeApiKey(apiKeyId string, userId string) error {
 		return utils.ErrUnauthorized
 	}
 
-	if apiKey.DeletedAt != nil {
-		return utils.ErrApiKeyNotFound
-	}
-
 	if apiKey.Revoked {
 		return utils.ErrInvalidRovoke
 	}
@@ -109,10 +105,6 @@ func (s apiKeyService) DeleteApiKey(apiKeyId string, userId string) error {
 
 	if apiKey.UserId != userId {
 		return utils.ErrUnauthorized
-	}
-
-	if apiKey.DeletedAt != nil {
-		return utils.ErrApiKeyNotFound
 	}
 
 	return s.repo.DeleteApiKey(apiKeyId)

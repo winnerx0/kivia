@@ -1,8 +1,11 @@
 package project
 
 import (
+	"errors"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"github.com/winnerx0/kivia/internal/utils"
 	"github.com/winnerx0/kivia/internal/validator"
 )
 
@@ -23,21 +26,21 @@ func (h projecthandler) CreateProject(c fiber.Ctx) error {
 	if err := c.Bind().JSON(&projectRequest); err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": err.Error()})
 	}
-	
+
 	if err := validator.Get().Struct(projectRequest); err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": validator.FirstError(err)})
 	}
 
 	project := &Project{
-		Id: uuid.New().String(),
-		Name: projectRequest.Name,
-		UserId: c.Value("userId").(string),
-		ApiKeys:[]string{},
+		Id:      uuid.New().String(),
+		Name:    projectRequest.Name,
+		UserId:  c.Value("userId").(string),
+		ApiKeys: []string{},
 	}
 
 	if err := h.service.CreateProject(project); err != nil {
-		if err.Error() == "DUPLICATE_PROJECT_NAME" {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "Project with name already exists"})
+		if errors.Is(err, utils.ErrDuplicateProjectName) {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -56,4 +59,25 @@ func (h projecthandler) GetAllProjects(c fiber.Ctx) error {
 	}
 
 	return c.JSON(projects)
+}
+
+func (h projecthandler) DeleteProject(c fiber.Ctx) error {
+
+	userId := c.Value("userId").(string)
+
+	projectId := c.Params("projectId")
+
+	err := h.service.DeleteProject(c, projectId, userId)
+
+	if err != nil {
+
+		if errors.Is(err, utils.ErrProjectNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+		} else if errors.Is(err, utils.ErrProjectAccessDenied) {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/winnerx0/kivia/internal/utils"
 )
 
 type Repository struct {
@@ -30,7 +31,7 @@ func (r Repository) Save(project Project) error {
 
 	if ok := errors.As(err, &pgErr); ok {
 		if pgErr.Code == "23505" {
-			return errors.New("DUPLICATE_PROJECT_NAME")
+			return utils.ErrDuplicateProjectName
 		}
 	}
 
@@ -76,7 +77,8 @@ func (r Repository) FindProjectIdByApiKey(apiKey string) (string, error) {
 	var projectId string
 
 	query := `
-	SELECT projects.id FROM projects JOIN api_keys ON api_keys.project_id = projects.id WHERE api_keys.key = $1 AND api_keys.revoked = false AND api_keys.deleted_at IS NULL
+	SELECT projects.id FROM projects JOIN api_keys ON api_keys.project_id = projects.id
+	WHERE api_keys.key = $1 AND api_keys.revoked = false
 	`
 
 	row := r.db.QueryRow(context.Background(), query, apiKey)
@@ -93,7 +95,7 @@ func (r Repository) FindAllByUserId(userId string) ([]ProjectResponse, error) {
 	query := `
 	SELECT projects.id, projects.name, COUNT(api_keys.id), projects.user_id, projects.created_at 
 	FROM projects
-	LEFT JOIN api_keys ON api_keys.project_id = projects.id AND api_keys.deleted_at IS NULL
+	LEFT JOIN api_keys ON api_keys.project_id = projects.id
 	WHERE projects.user_id = $1
 	GROUP BY projects.id
 	`
@@ -116,4 +118,10 @@ func (r Repository) FindAllByUserId(userId string) ([]ProjectResponse, error) {
 	}
 
 	return projects, nil
+}
+
+func (r Repository) Delete(ctx context.Context, projectId string) error {
+	_, err:=  r.db.Exec(ctx, "DELETE FROM projects WHERE id = ?", projectId)
+
+	return err
 }

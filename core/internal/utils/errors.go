@@ -13,6 +13,8 @@ var (
 
 	// project related errors
 	ErrProjectNotFound = errors.New("Project not found")
+	ErrProjectAccessDenied = errors.New("Project access denied")
+	ErrDuplicateProjectName = errors.New("Duplicate project name")
 	
 	ErrSomethingWentWrong = errors.New("Something went wrong")
 	

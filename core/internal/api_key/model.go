@@ -15,7 +15,5 @@ type ApiKey struct {
 
 	Revoked bool `json:"revoked"`
 
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
-
 	CreatedAt time.Time `json:"created_at"`
 }

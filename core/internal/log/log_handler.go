@@ -34,6 +34,10 @@ func (h loghandler) CreateLog(c fiber.Ctx) error {
 
 	if err := h.service.CreateLog(createLogRequest, apiKey); err != nil {
 
+		if errors.Is(err, utils.ErrInvalidApiKey) {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+		}
+
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 

@@ -46,7 +46,7 @@ func (m *MockApiKeyRepository) FindProjectIdByKey(apiKey string) (string, error)
 	return args.String(0), args.Error(1)
 }
 
-func (m *MockApiKeyRepository) FindIdById(key string) (string, error) {
+func (m *MockApiKeyRepository) FindIdByKey(key string) (string, bool, error) {
 	args := m.Called(key)
-	return args.String(0), args.Error(1)
+	return args.String(0), args.Bool(1), args.Error(2)
 }

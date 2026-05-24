@@ -8,5 +8,5 @@ type ApiKeyRepository interface {
 	RevokeApiKey(id string) error
 	DeleteApiKey(id string) error
 	FindProjectIdByKey(apiKey string) (string, error)
-	FindIdById(key string) (string, error)
+	FindIdByKey(key string) (string, bool, error)
 }

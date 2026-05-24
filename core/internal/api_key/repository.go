@@ -44,12 +44,12 @@ func (r *Repository) FindByProjectId(projectId string) (ApiKey, error) {
 	var apiKey ApiKey
 
 	query := `
-		SELECT id, name, key, user_id, project_Id, revoked, deleted_at, created_at FROM api_keys WHERE revoked = false AND deleted_at IS NULL AND project_Id = $1
+		SELECT id, name, key, user_id, project_Id, revoked, created_at FROM api_keys WHERE project_Id = $1
 	`
 
 	row := r.db.QueryRow(context.Background(), query, projectId)
 
-	err := row.Scan(&apiKey.Id, &apiKey.Name, &apiKey.Key, &apiKey.UserId, &apiKey.ProjectId, &apiKey.Revoked, &apiKey.DeletedAt, &apiKey.CreatedAt)
+	err := row.Scan(&apiKey.Id, &apiKey.Name, &apiKey.Key, &apiKey.UserId, &apiKey.ProjectId, &apiKey.Revoked, &apiKey.CreatedAt)
 
 	return apiKey, err
 }
@@ -59,12 +59,12 @@ func (r *Repository) FindById(id string) (ApiKey, error) {
 	var apiKey ApiKey
 
 	query := `
-		SELECT id, name, key, user_id, project_id, revoked, deleted_at, created_at FROM api_keys WHERE id = $1
+		SELECT id, name, key, user_id, project_id, revoked, created_at FROM api_keys WHERE id = $1
 	`
 
 	row := r.db.QueryRow(context.Background(), query, id)
 
-	err := row.Scan(&apiKey.Id, &apiKey.Name, &apiKey.Key, &apiKey.UserId, &apiKey.ProjectId, &apiKey.Revoked, &apiKey.DeletedAt, &apiKey.CreatedAt)
+	err := row.Scan(&apiKey.Id, &apiKey.Name, &apiKey.Key, &apiKey.UserId, &apiKey.ProjectId, &apiKey.Revoked, &apiKey.CreatedAt)
 
 	return apiKey, err
 }
@@ -74,7 +74,7 @@ func (r *Repository) FindAllByUserIdAndProjectId(userId string, projectId string
 	apiKeys := make([]ApiKey, 0)
 
 	query := `
-		SELECT id, name, key, revoked, project_id, created_at FROM api_keys WHERE user_id = $1 AND project_id = $2 AND deleted_at IS NULL
+		SELECT id, name, key, revoked, project_id, created_at FROM api_keys WHERE user_id = $1 AND project_id = $2
 	`
 
 	rows, err := r.db.Query(context.Background(), query, userId, projectId)
@@ -103,7 +103,7 @@ func (r *Repository) FindAllByUserIdAndProjectId(userId string, projectId string
 func (r *Repository) RevokeApiKey(id string) error {
 
 	query := `
-		UPDATE api_keys SET revoked = true WHERE id = $1 AND deleted_at IS NULL;
+		UPDATE api_keys SET revoked = true WHERE id = $1;
 	`
 	_, err := r.db.Exec(context.Background(), query, id)
 
@@ -113,7 +113,7 @@ func (r *Repository) RevokeApiKey(id string) error {
 func (r *Repository) DeleteApiKey(id string) error {
 
 	query := `
-		UPDATE api_keys SET revoked = true, deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL;
+		DELETE FROM api_keys WHERE id = $1;
 	`
 	_, err := r.db.Exec(context.Background(), query, id)
 
@@ -125,7 +125,7 @@ func (r *Repository) FindProjectIdByKey(apiKey string) (string, error) {
 	var projectId string
 
 	query := `
-	SELECT project_id FROM api_keys WHERE key = $1 AND revoked = false AND deleted_at IS NULL
+	SELECT project_id FROM api_keys WHERE key = $1 AND revoked = false
 	`
 
 	row := r.db.QueryRow(context.Background(), query, apiKey)
@@ -135,17 +135,19 @@ func (r *Repository) FindProjectIdByKey(apiKey string) (string, error) {
 	return projectId, err
 }
 
-func (r *Repository) FindIdById(key string) (string, error) {
+func (r *Repository) FindIdByKey(key string) (string, bool, error) {
 
 	var id string
 
+	var revoked bool
+
 	query := `
-	SELECT id FROM api_keys WHERE key = $1 AND revoked = false AND deleted_at IS NULL
+	SELECT id, revoked FROM api_keys WHERE key = $1 AND revoked = false
 	`
 
 	row := r.db.QueryRow(context.Background(), query, key)
 
-	err := row.Scan(&id)
+	err := row.Scan(&id, &revoked)
 
-	return id, err
+	return id, revoked, err
 }
