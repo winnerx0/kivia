@@ -63,12 +63,11 @@ services:
       - internal
 
   nginx:
-    image: "nginx:trixie-perl"
+    build: './nginx'
     ports:
       - '80:80'
       - '443:443'
     volumes:
-      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       - letsencrypt:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot:ro
     depends_on:
