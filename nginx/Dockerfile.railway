@@ -1,0 +1,3 @@
+FROM nginx:trixie-perl
+
+COPY nginx.railway.conf /etc/nginx/nginx.conf
