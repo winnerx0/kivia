@@ -28,9 +28,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: kivia
-      RABBITMQ_CONNECTION_URL: ${RABBITMQ_CONNECTION_URL}
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
       JWT_ACCESS_TOKEN_SECRET: ${JWT_ACCESS_TOKEN_SECRET}
       JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_TOKEN_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -39,12 +36,11 @@ services:
       GOOGLE_FRONTEND_URL: ${GOOGLE_FRONTEND_URL}
       SENDER_EMAIL: ${SENDER_EMAIL}
       SENDER_NAME: ${SENDER_NAME}
+      BREVO_API_KEY: ${BREVO_API_KEY}
       KIVIA_API_KEY: ${KIVIA_API_KEY}
     depends_on:
       migrate:
         condition: service_completed_successfully
-      rabbitmq:
-        condition: service_healthy
       postgres:
         condition: service_healthy
     healthcheck:
@@ -53,18 +49,6 @@ services:
       timeout: 3s
       retries: 10
       start_period: 10s
-  email_service:
-    build: './email'
-    container_name: email_service
-    ports:
-      - "8082"
-    env_file:
-      - .env
-    environment:
-      PORT: 8082
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
   nginx:
     image: "nginx:trixie-perl"
     volumes:
@@ -74,23 +58,6 @@ services:
     depends_on:
       core:
         condition: service_healthy
-      email_service:
-        condition: service_started
-  rabbitmq:
-    image: 'rabbitmq:latest'
-    ports:
-      - '5672:5672'
-      - '15672:15672'
-    container_name: rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-password}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD-SHELL", "rabbitmqctl status"]
-      interval: 5s
-      retries: 5
 
   postgres:
     image: 'postgres:16-alpine'
@@ -111,4 +78,3 @@ services:
       start_period: 10s
 volumes:
   kivia_db_data:
-  rabbitmq_data:
