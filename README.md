@@ -1,6 +1,6 @@
 # Kivia
 
-API observability platform for capturing, queueing, storing, and viewing HTTP request logs from applications that use the Kivia SDK.
+API observability platform for capturing, storing, and viewing HTTP request logs from applications that use the Kivia SDK.
 
 ## Architecture
 
@@ -18,16 +18,14 @@ flowchart LR
     nginx[NGINX Reverse Proxy]
   end
 
-  subgraph backend[Backend Services]
+  subgraph backend[Backend Modulith]
     core[Core API<br/>Go + Fiber]
-    email[Email Service<br/>Go + Fiber]
+    email[Email Module<br/>Brevo]
     sse[SSE Event Server]
-    consumer[Log Queue Consumer]
   end
 
   subgraph data[Data Layer]
     postgres[(PostgreSQL)]
-    rabbit[(RabbitMQ Log Queue)]
   end
 
   migrate[Migration Service]
@@ -40,21 +38,15 @@ flowchart LR
   nginx --> core
   core -->|users, projects, API keys, logs| postgres
   core -->|OTP and transactional email| email
-  core -->|publish log event| rabbit
-
-  rabbit --> consumer
-  consumer -->|persist logs| postgres
-  consumer -->|broadcast new logs| sse
+  core -->|broadcast new logs| sse
   sse -->|/api/v1/logs/stream/:projectId| frontend
 
   migrate -->|apply SQL migrations before startup| postgres
 ```
 
 - **NGINX**: reverse proxy, CORS, rate limiting, and auth request checks.
-- **Core API**: authentication, users, projects, API keys, log ingestion, log retrieval, and SSE log streaming.
-- **RabbitMQ**: async queue for non-blocking log ingestion.
+- **Core API**: single Go modulith — authentication, users, projects, API keys, log ingestion, log retrieval, SSE log streaming, and email delivery via Brevo.
 - **PostgreSQL**: primary data store.
-- **Email Service**: OTP and transactional email delivery.
 - **Frontend**: Next.js dashboard in `frontend/`.
 
 ## Tech Stack
@@ -64,25 +56,22 @@ flowchart LR
 | Backend | Go, Fiber v3 |
 | Frontend | Next.js |
 | Database | PostgreSQL |
-| Queue | RabbitMQ |
 | Proxy | NGINX |
 | Auth | JWT access and refresh tokens |
 | Containers | Docker Compose |
 
 ## System Design
 
-Kivia is designed as a small observability platform with clear separation between user-facing dashboard traffic, authenticated management APIs, SDK log ingestion, asynchronous processing, and email delivery.
+Kivia is designed as a small observability platform built as a modulith: one Go binary with clear internal module boundaries between auth, users, projects, API keys, logs, and email.
 
 ### Components
 
 | Component | Responsibility |
 | --- | --- |
 | Frontend | Next.js dashboard for authentication, project management, API key management, log browsing, charts, and live log updates. |
-| NGINX | Public edge proxy for the backend services. It centralizes routing, CORS handling, rate limiting, TLS in production, and API key auth checks for protected ingestion routes. |
-| Core API | Main Go/Fiber service. Owns users, auth, projects, API keys, log ingestion, log retrieval, chart aggregation, and SSE streams. |
+| NGINX | Public edge proxy for the backend. It centralizes routing, CORS handling, rate limiting, TLS in production, and API key auth checks for protected ingestion routes. |
+| Core API | Single Go/Fiber modulith. Owns users, auth, projects, API keys, log ingestion, log retrieval, chart aggregation, SSE streams, and OTP/transactional email delivery via Brevo. |
 | PostgreSQL | System of record for users, refresh tokens, projects, API keys, request logs, and email verification state. |
-| RabbitMQ | Buffer between synchronous SDK ingestion and durable log storage. This keeps SDK-facing requests fast and isolates short database slowdowns from client applications. |
-| Email Service | Go/Fiber service responsible for OTP and transactional email workflows. |
 | Migration Service | One-shot container that applies SQL migrations before the core service starts. |
 
 ### Request Flow
@@ -101,7 +90,7 @@ Core API
     |
     +--> PostgreSQL
     |
-    +--> Email Service
+    +--> Email module (Brevo)
 ```
 
 Dashboard requests use JWT access tokens. The core API validates the token, authorizes ownership by `user_id`, and reads or writes project, key, user, and log data in PostgreSQL.
@@ -115,18 +104,12 @@ NGINX auth check
     v
 Core API log ingestion
     |
-    v
-RabbitMQ log_queue
-    |
-    v
-Core API consumer
-    |
     +--> PostgreSQL logs
     |
     +--> SSE broadcast to dashboard clients
 ```
 
-SDK log ingestion is API-key protected. The core API validates the key, resolves the project, publishes the log event to RabbitMQ, and returns quickly. A consumer persists log events and broadcasts new entries to any active SSE clients for the project.
+SDK log ingestion is API-key protected. The core API validates the key, resolves the project, persists the log, and broadcasts new entries to any active SSE clients for the project.
 
 ### Data Model
 
@@ -160,7 +143,6 @@ The dashboard uses Server-Sent Events through `/api/v1/logs/stream/:projectId`. 
 
 ### Reliability Boundaries
 
-- RabbitMQ absorbs ingestion bursts and decouples SDK request latency from database writes.
 - PostgreSQL remains the durable source of truth.
 - Migrations run before the core service starts so schema changes are applied deterministically.
 - NGINX provides edge-level rate limiting and request routing.
@@ -186,9 +168,10 @@ POSTGRES_DB=kivia
 PORT=8081
 JWT_ACCESS_TOKEN_SECRET=<secret>
 JWT_REFRESH_TOKEN_SECRET=<secret>
-RABBITMQ_CONNECTION_URL=amqp://guest:password@rabbitmq:5672
-RABBITMQ_DEFAULT_USER=guest
-RABBITMQ_DEFAULT_PASS=password
+
+BREVO_API_KEY=<secret>
+SENDER_EMAIL=noreply@example.com
+SENDER_NAME=Kivia
 
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
@@ -198,7 +181,7 @@ KIVIA_API_KEY=
 CERTBOT_EMAIL=admin@example.com
 ```
 
-`core` and `email_service` both read from the root `.env`; their service-specific ports are set by Docker Compose.
+`core` reads from the root `.env`; its port is set by Docker Compose.
 The `migrate` service applies `core/migrations` before `core` starts.
 
 ### Local Run
@@ -212,9 +195,7 @@ Local services:
 | Service | URL |
 | --- | --- |
 | Core API | http://localhost:8081 |
-| Email Service | http://localhost:8082 |
 | NGINX | http://localhost:8080 |
-| RabbitMQ Console | http://localhost:15672 |
 | PostgreSQL | localhost:5000 |
 
 ### Production Compose
@@ -305,9 +286,8 @@ kivia/
 ├── core/                  # Main backend API
 │   ├── cmd/core/          # Core service entry point
 │   ├── api/               # Server and route setup
-│   ├── internal/          # Auth, users, projects, API keys, logs, middleware, config
+│   ├── internal/          # Auth, users, projects, API keys, logs, email, middleware, config
 │   └── migrations/        # SQL migrations
-├── email_service/         # Email microservice
 ├── nginx/                 # NGINX reverse proxy config
 ├── frontend/              # Next.js dashboard
 ├── kivia-sdk-go/          # Go SDK

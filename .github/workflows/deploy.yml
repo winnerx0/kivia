@@ -13,14 +13,9 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: true
-      matrix:
-        directory: ["./core", "./email"]
-
     defaults:
       run:
-        working-directory: ${{ matrix.directory }}
+        working-directory: ./core
 
     steps:
       - name: Checkout
@@ -29,7 +24,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: ${{ matrix.directory }}/go.mod
+          go-version-file: ./core/go.mod
 
       - name: Vet backend
         run: go vet ./...
