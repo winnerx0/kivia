@@ -17,10 +17,9 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/winnerx0/kivia/internal/config"
+	emailservice "github.com/winnerx0/kivia/internal/email"
 	emailverification "github.com/winnerx0/kivia/internal/email_verification"
-	"github.com/winnerx0/kivia/internal/rabbitmq"
 	refreshtoken "github.com/winnerx0/kivia/internal/refresh_token"
 	"github.com/winnerx0/kivia/internal/user"
 	"github.com/winnerx0/kivia/internal/utils"
@@ -31,16 +30,16 @@ type authservice struct {
 	userrepo              *user.Repository
 	refreshTokenRepo      *refreshtoken.Repository
 	emailVerificationRepo *emailverification.Repository
-	rabbitMQClient        *rabbitmq.RabbitMQClient
+	emailService          *emailservice.EmailService
 	config                config.Config
 }
 
-func NewAuthService(userrepo *user.Repository, refreshTokenRepo *refreshtoken.Repository, emailVerificationRepo *emailverification.Repository, rabbitMQClient *rabbitmq.RabbitMQClient, config config.Config) *authservice {
+func NewAuthService(userrepo *user.Repository, refreshTokenRepo *refreshtoken.Repository, emailVerificationRepo *emailverification.Repository, emailService *emailservice.EmailService, config config.Config) *authservice {
 	return &authservice{
 		userrepo:              userrepo,
 		refreshTokenRepo:      refreshTokenRepo,
 		emailVerificationRepo: emailVerificationRepo,
-		rabbitMQClient:        rabbitMQClient,
+		emailService:          emailService,
 		config:                config,
 	}
 }
@@ -129,23 +128,21 @@ func (s authservice) sendOTP(userId, email string) error {
 	
 	log.Printf("Email verification saved for user %s", userId)
 
-	emailMsg := map[string]string{
-		"to":      email,
-		"subject": "Verify your Kivia account",
-		"text":    fmt.Sprintf("Your verification code is: %s", otp),
-		"html":    fmt.Sprintf("<h2>Your verification code</h2><p>Use the following code to verify your account:</p><h1 style=\"letter-spacing: 8px; font-size: 36px;\">%s</h1><p>This code expires in 10 minutes.</p>", otp),
+	emailMsg := emailservice.Email{
+		To:      email,
+		Subject: "Verify your Kivia account",
+		Text:    fmt.Sprintf("Your verification code is: %s", otp),
+		Html:    fmt.Sprintf("<h2>Your verification code</h2><p>Use the following code to verify your account:</p><h1 style=\"letter-spacing: 8px; font-size: 36px;\">%s</h1><p>This code expires in 10 minutes.</p>", otp),
 	}
 
-	emailBytes, err := json.Marshal(emailMsg)
-	if err != nil {
-		return err
-	}
+	// ponytail: fire-and-forget, same semantics as the old auto-ack queue
+	go func() {
+		if err := s.emailService.Send(emailMsg); err != nil {
+			log.Printf("failed to send OTP email: %v", err)
+		}
+	}()
 
-	return s.rabbitMQClient.Channel.Publish("", "email_queue", false, false, amqp.Publishing{
-		ContentType:  "application/json",
-		DeliveryMode: amqp.Persistent,
-		Body:         emailBytes,
-	})
+	return nil
 }
 
 func (s authservice) VerifyOTP(req VerifyOTPRequest) error {

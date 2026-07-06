@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	logging "log"
 	"log/slog"
 
 	"github.com/gofiber/fiber/v3"
@@ -11,11 +10,11 @@ import (
 	"github.com/winnerx0/kivia/internal/auth"
 	"github.com/winnerx0/kivia/internal/config"
 	"github.com/winnerx0/kivia/internal/database"
+	"github.com/winnerx0/kivia/internal/email"
 	emailverification "github.com/winnerx0/kivia/internal/email_verification"
 	"github.com/winnerx0/kivia/internal/log"
 	"github.com/winnerx0/kivia/internal/middleware"
 	"github.com/winnerx0/kivia/internal/project"
-	"github.com/winnerx0/kivia/internal/rabbitmq"
 	refreshtoken "github.com/winnerx0/kivia/internal/refresh_token"
 	"github.com/winnerx0/kivia/internal/sse"
 	"github.com/winnerx0/kivia/internal/user"
@@ -25,11 +24,9 @@ type Server struct {
 	app *fiber.App
 
 	config config.Config
-
-	cancel context.CancelFunc
 }
 
-func NewServer(cfg config.Config, rabbitMQClient *rabbitmq.RabbitMQClient) *Server {
+func NewServer(cfg config.Config) *Server {
 
 	app := fiber.New(fiber.Config{
 		AppName:        "Kivia",
@@ -45,10 +42,6 @@ func NewServer(cfg config.Config, rabbitMQClient *rabbitmq.RabbitMQClient) *Serv
 
 	db := database.Connect(cfg.DBUrl)
 
-	if err := rabbitMQClient.SetupQueues(); err != nil {
-		panic(err)
-	}
-
 	projectRepository := project.NewRepository(db)
 
 	projectService := project.NewProjectService(projectRepository)
@@ -63,7 +56,7 @@ func NewServer(cfg config.Config, rabbitMQClient *rabbitmq.RabbitMQClient) *Serv
 
 	logRepository := log.NewRepository(db)
 
-	logService := log.NewLogService(logRepository, apiKeyRepository, projectRepository, rabbitMQClient, server)
+	logService := log.NewLogService(logRepository, apiKeyRepository, projectRepository, server)
 
 	logHandler := log.NewLogHandler(*logService)
 
@@ -73,7 +66,9 @@ func NewServer(cfg config.Config, rabbitMQClient *rabbitmq.RabbitMQClient) *Serv
 
 	emailVerificationRepository := emailverification.NewRepository(db)
 
-	authService := auth.NewAuthService(userRepository, refreshTokenRepository, emailVerificationRepository, rabbitMQClient, cfg)
+	emailService := email.NewEmailService(cfg.BrevoApiKey, cfg.SenderEmail, cfg.SenderName)
+
+	authService := auth.NewAuthService(userRepository, refreshTokenRepository, emailVerificationRepository, emailService, cfg)
 
 	_ = middleware.NewJwtMiddleware(*userRepository, cfg)
 
@@ -158,18 +153,10 @@ func NewServer(cfg config.Config, rabbitMQClient *rabbitmq.RabbitMQClient) *Serv
 
 	userRouter.Put("/me", userHandler.UpdateUser)
 
-	ctx, cancel := context.WithCancel(context.Background())
-
-	if err := logService.LogConsumer(ctx); err != nil {
-		logging.Fatal("Error starting log consumer: ", err)
-	}
-
-	return &Server{app: app, config: cfg, cancel: cancel}
+	return &Server{app: app, config: cfg}
 }
 
 func (s *Server) Start() error {
-
-	defer s.cancel()
 
 	return s.app.Listen(":" + s.config.Port)
 }

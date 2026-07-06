@@ -1,41 +1,33 @@
 package log
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
-	logger "log"
-
 	"github.com/google/uuid"
-	amqp "github.com/rabbitmq/amqp091-go"
 	apikey "github.com/winnerx0/kivia/internal/api_key"
 	"github.com/winnerx0/kivia/internal/project"
-	"github.com/winnerx0/kivia/internal/rabbitmq"
 	"github.com/winnerx0/kivia/internal/sse"
 	"github.com/winnerx0/kivia/internal/utils"
 )
 
 type Logservice struct {
-	repo           *Repository
-	apiKeyRepo     *apikey.Repository
-	projectRepo    *project.Repository
-	rabbitMQClient *rabbitmq.RabbitMQClient
-	eventServer    *sse.EventServer
+	repo        *Repository
+	apiKeyRepo  *apikey.Repository
+	projectRepo *project.Repository
+	eventServer *sse.EventServer
 }
 
-func NewLogService(repo *Repository, apiKeyRepo *apikey.Repository, projectRepo *project.Repository, rabbitMQClient *rabbitmq.RabbitMQClient, eventServer *sse.EventServer) *Logservice {
+func NewLogService(repo *Repository, apiKeyRepo *apikey.Repository, projectRepo *project.Repository, eventServer *sse.EventServer) *Logservice {
 	return &Logservice{
-		repo:           repo,
-		apiKeyRepo:     apiKeyRepo,
-		projectRepo:    projectRepo,
-		rabbitMQClient: rabbitMQClient,
-		eventServer:    eventServer,
+		repo:        repo,
+		apiKeyRepo:  apiKeyRepo,
+		projectRepo: projectRepo,
+		eventServer: eventServer,
 	}
 }
 
@@ -106,17 +98,7 @@ func (s Logservice) CreateLog(createLogRequest createLogRequest, apiKey string) 
 
 	s.eventServer.BroadcastToProject(projectId, logBytes)
 
-	err = s.rabbitMQClient.Channel.Publish("", "log_queue", false, false, amqp.Publishing{
-		ContentType:  "application/json",
-		DeliveryMode: amqp.Persistent,
-		Body:         logBytes,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.Save(log)
 }
 
 func (s Logservice) GetLogsByProjectId(projectId string, startDate *string, endDate *string, statusCode *string, apiKeyType *string, page string, limit string) (PaginatedLogResponse, error) {
@@ -152,42 +134,6 @@ func (s Logservice) GetLogsByProjectId(projectId string, startDate *string, endD
 		Items:      len(logs),
 		TotelItems: total,
 	}, nil
-}
-
-func (s Logservice) LogConsumer(ctx context.Context) error {
-
-	msgs, err := s.rabbitMQClient.ConsumeRabbitMQQueue("log_queue")
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case d, ok := <-msgs:
-
-				log.Println("received log")
-				if !ok {
-					return
-				}
-
-				var log Log
-				if err := json.Unmarshal(d.Body, &log); err != nil {
-					logger.Println("Invalid log format:", err)
-					continue
-				}
-
-				if err := s.repo.Save(log); err != nil {
-					logger.Println("Failed to save log:", err)
-				}
-			}
-		}
-	}()
-
-	return nil
-
 }
 
 func (s Logservice) GetLogsForChart(projectId string, startDate *string, endDate *string) ([]LogChart, error) {

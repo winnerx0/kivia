@@ -14,7 +14,9 @@ type Config struct {
 
 	JwtRefreshTokenSecret string
 
-	RabbitMQConnectionUrl string
+	BrevoApiKey string
+	SenderEmail string
+	SenderName  string
 
 	GoogleClientID     string
 	GoogleClientSecret string
@@ -30,7 +32,9 @@ func Load() *Config {
 		Port:                  getEnv("PORT", ""),
 		JwtAccessTokenSecret:  getEnv("JWT_ACCESS_TOKEN_SECRET", ""),
 		JwtRefreshTokenSecret: getEnv("JWT_REFRESH_TOKEN_SECRET", ""),
-		RabbitMQConnectionUrl: getEnv("RABBITMQ_CONNECTION_URL", ""),
+		BrevoApiKey:           getEnv("BREVO_API_KEY", ""),
+		SenderEmail:           getEnv("SENDER_EMAIL", ""),
+		SenderName:            getEnv("SENDER_NAME", ""),
 		GoogleClientID:        getEnv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret:    getEnv("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURL:     getEnv("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/google/callback"),
