@@ -179,8 +179,5 @@ func (h authhandler) ValidateToken(c fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	c.Set("X-User-Id", response.UserId)
-	c.Set("X-User-Role", response.Role)
-
 	return c.Status(fiber.StatusOK).JSON("OK")
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
-	_ "github.com/gofiber/fiber/v3/middleware/cors"
 	apikey "github.com/winnerx0/kivia/internal/api_key"
 	"github.com/winnerx0/kivia/internal/auth"
 	"github.com/winnerx0/kivia/internal/config"
@@ -71,7 +70,7 @@ func NewServer(cfg config.Config) *Server {
 
 	authService := auth.NewAuthService(userRepository, refreshTokenRepository, emailVerificationRepository, emailService, cfg)
 
-	_ = middleware.NewJwtMiddleware(*userRepository, cfg)
+	jwtMiddleware := middleware.NewJwtMiddleware(*userRepository, cfg)
 
 	apiKeyHandler := apikey.NewApiKeyHandler(*apiService)
 
@@ -81,7 +80,7 @@ func NewServer(cfg config.Config) *Server {
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"https://localhost:3000", "https://kivia-observe.vercel.app"},
-		AllowHeaders: []string{"Authorization", "Content-Type", "Accept", "X-Kivia-Api-Key", "X-User-ID"},
+		AllowHeaders: []string{"Authorization", "Content-Type", "Accept", "X-Kivia-Api-Key"},
 		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowCredentials: false,
 	}))
@@ -116,7 +115,7 @@ func NewServer(cfg config.Config) *Server {
 	authRouter.Post("/resend-otp", authhandler.ResendOTP)
 
 	// project routes
-	projectRouter := v1.Group("/projects", middleware.AuthMiddlware)
+	projectRouter := v1.Group("/projects", jwtMiddleware.JwtMiddleware)
 
 	projectRouter.Post("/create", projectHandler.CreateProject)
 
@@ -125,7 +124,7 @@ func NewServer(cfg config.Config) *Server {
 	projectRouter.Delete("/:projectId", projectHandler.DeleteProject)
 
 	// api key routes
-	apiKeyRouter := v1.Group("/api-keys", middleware.AuthMiddlware)
+	apiKeyRouter := v1.Group("/api-keys", jwtMiddleware.JwtMiddleware)
 
 	apiKeyRouter.Post("/create", apiKeyHandler.CreateApiKey)
 
@@ -140,14 +139,14 @@ func NewServer(cfg config.Config) *Server {
 
 	logRouter.Post("/create", apiKeyMiddlware.ApiKeyMiddleware, logHandler.CreateLog)
 
-	logRouter.Get("/all/:projectId", middleware.AuthMiddlware, logHandler.GetLogsByProjectId)
+	logRouter.Get("/all/:projectId", jwtMiddleware.JwtMiddleware, logHandler.GetLogsByProjectId)
 
-	logRouter.Get("/stream/:projectId", middleware.AuthMiddlware, server.HandleConnection)
+	logRouter.Get("/stream/:projectId", jwtMiddleware.JwtMiddleware, server.HandleConnection)
 
-	logRouter.Get("/chart/:projectId", middleware.AuthMiddlware, logHandler.GetLogsForChart)
+	logRouter.Get("/chart/:projectId", jwtMiddleware.JwtMiddleware, logHandler.GetLogsForChart)
 
 	// user routes
-	userRouter := v1.Group("/users", middleware.AuthMiddlware)
+	userRouter := v1.Group("/users", jwtMiddleware.JwtMiddleware)
 
 	userRouter.Get("/me", userHandler.GetCurrentUser)
 
