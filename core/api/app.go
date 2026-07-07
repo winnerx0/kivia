@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 	_ "github.com/gofiber/fiber/v3/middleware/cors"
 	apikey "github.com/winnerx0/kivia/internal/api_key"
 	"github.com/winnerx0/kivia/internal/auth"
@@ -78,11 +79,12 @@ func NewServer(cfg config.Config) *Server {
 
 	userHandler := user.NewUserHandler(*userService)
 
-	// app.Use(cors.New(cors.Config{
-	// 	AllowOrigins: []string{"http://localhost:3000"},
-	// 	AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-	// 	AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Kivia-Api-Key", "X-User-ID"},
-	// }))
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"https://localhost:3000", "https://kivia-observe.vercel.app"},
+		AllowHeaders: []string{"Authorization", "Content=Type", "Accept", "X-Kivia-Api-Key", "X-User-ID"},
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowCredentials: false,
+	}))
 
 	app.Get("/health", func(c fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
