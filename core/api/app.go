@@ -81,7 +81,7 @@ func NewServer(cfg config.Config) *Server {
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"https://localhost:3000", "https://kivia-observe.vercel.app"},
-		AllowHeaders: []string{"Authorization", "Content=Type", "Accept", "X-Kivia-Api-Key", "X-User-ID"},
+		AllowHeaders: []string{"Authorization", "Content-Type", "Accept", "X-Kivia-Api-Key", "X-User-ID"},
 		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowCredentials: false,
 	}))
