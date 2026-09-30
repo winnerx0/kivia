@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import Link from "@/components/Link";
 import {
   Activity,
   Shield,
@@ -163,12 +162,11 @@ export default function LandingPage() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <Image
+              <img
                 src="/logo.svg"
                 alt="Kivia"
                 width={30}
                 height={30}
-                priority
                 className="rounded-lg transition-transform group-hover:scale-105"
               />
               <span className="text-lg font-display font-bold tracking-tight">
@@ -1050,7 +1048,7 @@ internal-tools    1 key       456 reqs`,
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12">
             <div className="lg:col-span-5">
               <div className="flex items-center gap-2 mb-5">
-                <Image
+                <img
                   src="/logo.svg"
                   alt="Kivia"
                   width={28}

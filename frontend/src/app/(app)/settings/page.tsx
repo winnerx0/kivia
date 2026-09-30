@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { User, Trash2, LogOut, Moon, Sun, Mail, Calendar } from "lucide-react";
 import { toast } from "sonner";
@@ -22,7 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import Image from "next/image";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -33,7 +32,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function SettingsPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [name, setName] = useState("");
@@ -78,7 +77,7 @@ export default function SettingsPage() {
     mutationFn: deleteAccount,
     onSuccess: () => {
       clearTokens();
-      router.push("/login");
+      navigate("/login");
       toast.success("Account deleted");
     },
     onError: (err) => {
@@ -113,7 +112,7 @@ export default function SettingsPage() {
 
   function handleLogout() {
     clearTokens();
-    router.push("/login");
+    navigate("/login");
   }
 
   return (
@@ -158,7 +157,7 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-3 mb-5 p-3 rounded-lg bg-muted/30">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
                       {user.profile_picture && (
-                        <Image
+                <img
                           src={user.profile_picture}
                           alt={user.name}
                           className="h-9 w-9 rounded-full"

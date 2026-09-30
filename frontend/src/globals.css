@@ -1,0 +1,7 @@
+@import "./app/globals.css";
+
+:root {
+  --font-bricolage: "Bricolage Grotesque", "Arial", sans-serif;
+  --font-instrument: "Instrument Sans", "Arial", sans-serif;
+  --font-jetbrains-mono: "JetBrains Mono", "Courier New", monospace;
+}

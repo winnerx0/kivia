@@ -6,7 +6,7 @@ Dashboard for the Kivia API observability platform. View projects, manage API ke
 
 | Category         | Technology                                  |
 | ---------------- | ------------------------------------------- |
-| Framework        | Next.js 16 (App Router, Turbopack)          |
+| Framework        | React 19, Vite, React Router                 |
 | Language         | TypeScript, React 19                        |
 | Styling          | Tailwind CSS 4 (oklch color space)          |
 | Components       | shadcn/ui (base-nova style)                 |
@@ -30,14 +30,14 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:5173](http://localhost:5173).
 
 ### Scripts
 
 ```bash
 npm run dev     # Development server
 npm run build   # Production build
-npm start       # Production server
+npm run preview # Preview the production build
 npm run lint    # ESLint
 ```
 
@@ -59,19 +59,13 @@ npm run lint    # ESLint
 
 ```
 src/
-├── app/
-│   ├── layout.tsx              # Root layout (providers, fonts, dark mode)
+├── main.tsx                    # Browser entry point and app providers
+├── App.tsx                     # React Router route tree
+├── app/                        # Page components
 │   ├── page.tsx                # Landing page
-│   ├── globals.css             # Theme variables & global styles
 │   ├── login/page.tsx
 │   ├── register/page.tsx
-│   ├── dashboard/
-│   │   ├── layout.tsx          # Sidebar layout (protected)
-│   │   └── page.tsx
-│   └── projects/
-│       ├── layout.tsx          # Sidebar layout (protected)
-│       ├── page.tsx
-│       └── [id]/page.tsx
+│   └── (app)/                  # Protected page components
 ├── components/
 │   ├── AuthGuard.tsx
 │   ├── GuestGuard.tsx
@@ -94,4 +88,4 @@ The API client in `lib/api.ts` handles:
 
 ## Configuration
 
-The API base URL is currently set to `http://localhost:8080` in `lib/api.ts`. Update this for other environments.
+Set `VITE_BACKEND_URL` in `.env` to point at the backend. It defaults to `http://localhost:80` when unset.

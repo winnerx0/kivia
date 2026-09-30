@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { use } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useNavigate, useParams } from "react-router-dom";
+import Link from "@/components/Link";
 import {
   Copy,
   Check,
@@ -1372,13 +1371,9 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "logs", label: "Request Logs", icon: Activity },
 ];
 
-export default function ProjectDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id: projectId } = use(params);
-  const router = useRouter();
+export default function ProjectDetailPage() {
+  const { id: projectId = "" } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("api-keys");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -1395,7 +1390,7 @@ export default function ProjectDetailPage({
     onSuccess: () => {
       toast.success("Project deleted");
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      router.push("/projects");
+      navigate("/projects");
     },
     onError: (err) => {
       toast.error(

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
+import { useNavigate } from "react-router-dom";
+import Link from "@/components/Link";
 import { toast } from "sonner";
 import { Activity, Shield, BarChart3 } from "lucide-react";
 import { login, BASE_URL } from "@/lib/api";
@@ -32,7 +31,7 @@ const features = [
 ];
 
 export default function LoginPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -44,11 +43,11 @@ export default function LoginPage() {
       const tokens = await login({ email, password });
       setTokens(tokens.access_token, tokens.refresh_token);
       toast.success("Logged in successfully");
-      router.push("/dashboard");
+      navigate("/dashboard");
     } catch (err) {
       if (err instanceof Error && err.message === "NOT_VERIFIED") {
         toast.error("Please verify your email first");
-        router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
+        navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
         return;
       }
       toast.error(err instanceof Error ? err.message : "Login failed");
@@ -69,12 +68,11 @@ export default function LoginPage() {
 
         <div className="relative z-10">
           <Link href="/" className="inline-flex items-center gap-2.5 group">
-            <Image
+            <img
               src="/logo.svg"
               alt="Kivia logo"
               width={36}
               height={36}
-              priority
               className="rounded-xl transition-transform group-hover:scale-105"
             />
             <span className="text-xl font-display font-bold tracking-tight">Kivia</span>
@@ -123,12 +121,11 @@ export default function LoginPage() {
             href="/"
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors lg:hidden"
           >
-            <Image
+            <img
               src="/logo.svg"
               alt="Kivia logo"
               width={32}
               height={32}
-              priority
               className="rounded-lg"
             />
             <span className="font-display font-semibold text-foreground">Kivia</span>

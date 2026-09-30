@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { useLocation, useNavigate } from "react-router-dom";
+import Link from "@/components/Link";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
@@ -25,8 +24,8 @@ const navItems = [
 const STORAGE_KEY = "kivia-sidebar-collapsed";
 
 export default function AppSidebar() {
-  const pathname = usePathname();
-  const router = useRouter();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -46,7 +45,7 @@ export default function AppSidebar() {
 
   function handleLogout() {
     clearTokens();
-    router.push("/login");
+    navigate("/login");
   }
 
   return (
@@ -65,12 +64,11 @@ export default function AppSidebar() {
         )}
       >
         <div className={cn("flex items-center", !collapsed && "gap-2.5")}>
-          <Image
+          <img
             src="/logo.svg"
             alt="Kivia"
             width={28}
             height={28}
-            priority
             className="rounded-lg shrink-0"
           />
           {!collapsed && (

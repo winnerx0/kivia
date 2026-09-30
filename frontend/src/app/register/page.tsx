@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useNavigate } from "react-router-dom";
+import Link from "@/components/Link";
 import { toast } from "sonner";
 import { Zap, Activity, Shield, BarChart3 } from "lucide-react";
 import { register, BASE_URL } from "@/lib/api";
@@ -30,7 +30,7 @@ const features = [
 ];
 
 export default function RegisterPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,7 +42,7 @@ export default function RegisterPage() {
     try {
       await register({ name, email, password });
       toast.success("Verification code sent to your email");
-      router.push(`/verify-otp?email=${encodeURIComponent(email)}`);
+      navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");
     } finally {

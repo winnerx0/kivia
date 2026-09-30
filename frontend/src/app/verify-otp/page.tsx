@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import Link from "@/components/Link";
 import { toast } from "sonner";
 import { Zap, Mail } from "lucide-react";
 import { verifyOTP, resendOTP } from "@/lib/api";
@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 function VerifyOTPInner() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const email = searchParams.get("email") || "";
 
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -23,9 +23,9 @@ function VerifyOTPInner() {
 
   useEffect(() => {
     if (!email) {
-      router.push("/register");
+      navigate("/register");
     }
-  }, [email, router]);
+  }, [email, navigate]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -80,7 +80,7 @@ function VerifyOTPInner() {
     try {
       await verifyOTP(email, code);
       toast.success("Email verified! Please sign in.");
-      router.push("/login");
+      navigate("/login");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Verification failed");
       setOtp(["", "", "", "", "", ""]);
@@ -186,9 +186,5 @@ function VerifyOTPInner() {
 }
 
 export default function VerifyOTPPage() {
-  return (
-    <Suspense>
-      <VerifyOTPInner />
-    </Suspense>
-  );
+  return <VerifyOTPInner />;
 }

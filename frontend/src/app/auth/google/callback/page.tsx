@@ -1,14 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { setTokens } from "@/lib/auth";
 import { Loader2 } from "lucide-react";
 
 function GoogleCallbackContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const handled = useRef(false);
 
   useEffect(() => {
@@ -26,20 +26,20 @@ function GoogleCallbackContent() {
         auth_failed: "Google sign-in failed",
       };
       toast.error(messages[error] ?? "Google sign-in failed");
-      router.push("/login");
+      navigate("/login");
       return;
     }
 
     if (!accessToken || !refreshToken) {
       toast.error("Google sign-in failed");
-      router.push("/login");
+      navigate("/login");
       return;
     }
 
     setTokens(accessToken, refreshToken);
     toast.success("Signed in with Google");
-    router.push("/dashboard");
-  }, [searchParams, router]);
+    navigate("/dashboard");
+  }, [searchParams, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
@@ -52,18 +52,5 @@ function GoogleCallbackContent() {
 }
 
 export default function GoogleCallbackPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-background">
-          <div className="flex flex-col items-center gap-3 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <p className="text-sm">Loading...</p>
-          </div>
-        </div>
-      }
-    >
-      <GoogleCallbackContent />
-    </Suspense>
-  );
+  return <GoogleCallbackContent />;
 }

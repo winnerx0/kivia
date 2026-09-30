@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useQuery } from "@tanstack/react-query";
 import { FolderOpen, KeyRound, ArrowRight, Activity } from "lucide-react";
 import { getProjects } from "@/lib/api";
