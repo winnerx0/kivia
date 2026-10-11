@@ -8,9 +8,7 @@ RUN go mod download
 
 COPY . .
 
-RUN cd ./cmd/core && go build -o app
-
-RUN mv ./cmd/core/app .
+RUN go build -o app ./cmd/core
 
 FROM alpine:latest
 

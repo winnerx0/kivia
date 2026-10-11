@@ -13,14 +13,11 @@ services:
       - -database
       - ${DATABASE_URL}
       - up
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   core:
     build: './core'
     ports:
-      - '8081'
+      - '8081:8081'
     container_name: core
     environment:
       PORT: 8081
@@ -41,40 +38,11 @@ services:
     depends_on:
       migrate:
         condition: service_completed_successfully
-      postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://core:8081/health || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 10
-      start_period: 10s
-  nginx:
-    image: "nginx:trixie-perl"
-    volumes:
-      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
-    ports:
-      - '80:80'
-    depends_on:
-      core:
-        condition: service_healthy
-
-  postgres:
-    image: 'postgres:16-alpine'
-    ports:
-      - '5432:5432'
-    container_name: kivia_db
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: kivia
-    volumes:
-      - kivia_db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d kivia"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
       start_period: 10s
 volumes:
   kivia_db_data:
