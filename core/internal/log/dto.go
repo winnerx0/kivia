@@ -43,3 +43,10 @@ type LogBar struct {
 	Status int `json:"status"`
 	Count  int `json:"count"`
 }
+
+type Percentile struct {
+	Path  string `json:"path"`
+	Count int    `json:"count"`
+	P95   int    `json:"p95"`
+	P99   int    `json:"p99"`
+}

@@ -145,6 +145,8 @@ func NewServer(cfg config.Config) *Server {
 
 	logRouter.Get("/chart/:projectId", jwtMiddleware.JwtMiddleware, logHandler.GetLogsForChart)
 
+	logRouter.Get("/percentiles/:projectId", jwtMiddleware.JwtMiddleware, logHandler.GetProjectPercentiles)
+
 	// user routes
 	userRouter := v1.Group("/users", jwtMiddleware.JwtMiddleware)
 

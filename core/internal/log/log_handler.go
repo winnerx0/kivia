@@ -2,6 +2,7 @@ package log
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/winnerx0/kivia/internal/utils"
@@ -27,6 +28,8 @@ func (h loghandler) CreateLog(c fiber.Ctx) error {
 	if err := c.Bind().JSON(&createLogRequest); err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	fmt.Println(createLogRequest)
 
 	if err := validator.Get().Struct(createLogRequest); err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(fiber.Map{"error": validator.FirstError(err)})
@@ -116,4 +119,17 @@ func (h loghandler) GetLogsForChart(c fiber.Ctx) error {
 	}
 
 	return c.JSON(response)
+}
+
+func (h loghandler) GetProjectPercentiles(c fiber.Ctx) error {
+
+	projectId := c.Params("projectId")
+
+	percentiles, err := h.service.GetPercentiles(c.Context(), projectId)
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(percentiles)
 }

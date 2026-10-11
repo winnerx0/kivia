@@ -28,9 +28,11 @@ import {
   deleteApiKey,
   getLogs,
   getLogsChart,
+  getLogPercentiles,
   type ApiKey,
   type Log,
   type LogChart,
+  type LogPercentile,
 } from "@/lib/api";
 import { useLogStream } from "@/hooks/useLogStream";
 import { Button } from "@/components/ui/button";
@@ -961,6 +963,15 @@ function LogsTab({ projectId }: { projectId: string }) {
       ),
   });
 
+  const {
+    data: percentileData = [],
+    isLoading: percentilesLoading,
+    isError: percentilesError,
+  } = useQuery({
+    queryKey: ["log-percentiles", projectId],
+    queryFn: () => getLogPercentiles(projectId),
+  });
+
   const paginatedLogs: Log[] = data?.logs ?? [];
   const totalItems = data?.total_items ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / LOGS_PER_PAGE));
@@ -1139,6 +1150,63 @@ function LogsTab({ projectId }: { projectId: string }) {
           />
         )}
       </div>
+
+      <section className="rounded-xl border bg-card p-5 mb-6" aria-labelledby="latency-percentiles-heading">
+        <div className="mb-4">
+          <h3 id="latency-percentiles-heading" className="font-display text-sm font-semibold">
+            Latency percentiles
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Slowest response times by endpoint, across recorded requests.
+          </p>
+        </div>
+        {percentilesLoading ? (
+          <div className="space-y-2" aria-label="Loading latency percentiles">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        ) : percentilesError ? (
+          <p className="rounded-lg bg-destructive/5 px-3 py-2 text-sm text-destructive" role="alert">
+            Latency percentiles couldn&apos;t be loaded. Try refreshing the page.
+          </p>
+        ) : percentileData.length === 0 ? (
+          <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+            Percentiles will appear here after this project records requests.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Endpoint</TableHead>
+                  <TableHead className="text-right">Requests</TableHead>
+                  <TableHead className="text-right">P95</TableHead>
+                  <TableHead className="text-right">P99</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {percentileData.map((item: LogPercentile) => (
+                  <TableRow key={item.path}>
+                    <TableCell className="max-w-[min(60vw,32rem)] truncate font-mono text-xs" title={item.path}>
+                      {item.path}
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">
+                      {item.count.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">
+                      {item.p95.toLocaleString()} ms
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">
+                      {item.p99.toLocaleString()} ms
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
 
       {/* Date filter */}
       <form

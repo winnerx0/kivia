@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -53,8 +54,6 @@ func (s Logservice) CreateLog(createLogRequest createLogRequest, apiKey string) 
 		return err
 	}
 
-	latency := fmt.Sprintf("%d ms", *createLogRequest.Latency)
-
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/%s", "http://ip-api.com/json", createLogRequest.IPAddress), nil)
 
 	if err != nil {
@@ -86,7 +85,7 @@ func (s Logservice) CreateLog(createLogRequest createLogRequest, apiKey string) 
 		Location:  location.City + ", " + location.Country,
 		Status:    createLogRequest.Status,
 		Timestamp: createLogRequest.Timestamp,
-		Latency:   latency,
+		Latency:   *createLogRequest.Latency,
 		ApiKey:    apiKeyId,
 	}
 
@@ -128,8 +127,23 @@ func (s Logservice) GetLogsByProjectId(projectId string, startDate *string, endD
 
 	total := s.repo.GetLogCountByProjectId(projectId)
 
+	var responses []LogResponse
+
+	for _, log := range logs {
+
+		responses = append(responses, LogResponse{
+			Id: log.Id,
+			Path: log.Path,
+			Location: log.Location,
+			Latency: fmt.Sprintf("%d ms", log.Latency),
+			Status: log.Status,
+			Timestamp: log.Timestamp,
+			ApiKey: log.ApiKey,
+		})
+	}
+
 	return PaginatedLogResponse{
-		Logs:       logs,
+		Logs:       responses,
 		Page:       p,
 		Items:      len(logs),
 		TotelItems: total,
@@ -139,6 +153,10 @@ func (s Logservice) GetLogsByProjectId(projectId string, startDate *string, endD
 func (s Logservice) GetLogsForChart(projectId string, startDate *string, endDate *string) ([]LogChart, error) {
 
 	projectExists, err := s.projectRepo.ExistsById(projectId)
+
+	if err != nil {
+		return []LogChart{}, err
+	}
 
 	if !projectExists {
 		return []LogChart{}, utils.ErrProjectNotFound
@@ -152,4 +170,25 @@ func (s Logservice) GetLogsForChart(projectId string, startDate *string, endDate
 
 	return logs, nil
 
+}
+
+func (s Logservice) GetPercentiles(ctx context.Context, projectId string) ([]Percentile, error) {
+
+	projectExists, err := s.projectRepo.ExistsById(projectId)
+
+	if err != nil {
+		return []Percentile{}, err
+	}
+	
+	if !projectExists {
+		return []Percentile{}, utils.ErrProjectNotFound
+	}
+
+	percentiles, err := s.repo.FindPercentilesByProjectId(ctx, projectId)
+
+	if err != nil {
+		return []Percentile{}, err
+	}
+
+	return percentiles, nil
 }

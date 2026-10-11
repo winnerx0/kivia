@@ -30,7 +30,7 @@ func (r Repository) Save(log Log) error {
 	return err
 }
 
-func (r Repository) GetLogsByProjectId(projectId string, startDate *string, endDate *string, statusCode *int, apiKeyType *string, page int, limit int) ([]LogResponse, error) {
+func (r Repository) GetLogsByProjectId(projectId string, startDate *string, endDate *string, statusCode *int, apiKeyType *string, page int, limit int) ([]Log, error) {
 
 	query := `
 	SELECT logs.id, logs.path, logs.latency, logs.status, logs.location, logs.timestamp, api_keys.name
@@ -44,27 +44,25 @@ func (r Repository) GetLogsByProjectId(projectId string, startDate *string, endD
 	ORDER BY logs.timestamp DESC
 	LIMIT $6 OFFSET $7
 	`
-
-	log.Printf("GetLogsByProjectId params: projectId=%s, startDate=%v, endDate=%v, statusCode=%v, apiKeyType=%v, limit=%d, offset=%d", projectId, startDate, endDate, statusCode, apiKeyType, limit, page*limit)
-
+	
 	rows, err := r.db.Query(context.Background(), query, projectId, startDate, endDate, statusCode, apiKeyType, limit, page*limit)
 
 	if err != nil {
 		log.Printf("Error getting logs: %v", err)
-		return []LogResponse{}, err
+		return []Log{}, err
 	}
 
 	defer rows.Close()
 
-	logs := []LogResponse{}
+	logs := []Log{}
 
 	for rows.Next() {
-		var log LogResponse
+		var log Log
 		err := rows.Scan(&log.Id, &log.Path, &log.Latency, &log.Status, &log.Location, &log.Timestamp, &log.ApiKey)
 
 		if err != nil {
 			fmt.Println("error ", err)
-			return []LogResponse{}, err
+			return []Log{}, err
 		}
 
 		logs = append(logs, log)
@@ -145,4 +143,41 @@ func (r Repository) GetLogsForChart(projectId string, startDate *string, endDate
 	}
 
 	return charts, nil
+}
+
+func (r Repository) FindPercentilesByProjectId(ctx context.Context, projectId string) ([]Percentile, error) {
+
+	query := `
+		SELECT
+	 		l.path,
+			COUNT(*) as n,
+			percentile_cont(0.95) WITHIN GROUP (ORDER BY l.latency) as p95,
+			percentile_cont(0.99) WITHIN GROUP (ORDER BY l.latency) as p99
+		FROM logs l
+		JOIN api_keys a ON a.id = l.api_key_id AND a.project_id = $1
+		WHERE timestamp > now() - interval '1 hour'
+		GROUP BY path
+	`
+	rows, err := r.db.Query(ctx, query, projectId)
+
+	if err != nil {
+		return []Percentile{}, err
+	}
+
+	percentiles := []Percentile{}
+
+	for rows.Next() {
+
+		var percentile Percentile
+
+		err = rows.Scan(&percentile.Path, &percentile.Count, &percentile.P95, &percentile.P99)
+
+		if err != nil {
+			return []Percentile{}, err
+		}
+
+		percentiles = append(percentiles, percentile)
+	}
+
+	return percentiles, nil
 }

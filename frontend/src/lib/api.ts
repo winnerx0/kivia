@@ -72,6 +72,13 @@ export interface LogChart {
   logs: LogChartBar[];
 }
 
+export interface LogPercentile {
+  path: string;
+  count: number;
+  p95: number;
+  p99: number;
+}
+
 let refreshPromise: Promise<boolean> | null = null;
 
 async function refreshTokens(): Promise<boolean> {
@@ -320,4 +327,10 @@ export async function getLogsChart(
   return apiFetch<LogChart[]>(
     `/api/v1/logs/chart/${projectId}${query ? `?${query}` : ""}`,
   );
+}
+
+export async function getLogPercentiles(
+  projectId: string,
+): Promise<LogPercentile[]> {
+  return apiFetch<LogPercentile[]>(`/api/v1/logs/percentiles/${projectId}`);
 }

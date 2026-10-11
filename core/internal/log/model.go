@@ -8,13 +8,13 @@ type Log struct {
 	
 	Path string `json:"path"`
 	
+	Latency int `json:"latency"`
+	
 	Status int `json:"status"`
 	
 	Location string `json:"location,omitempty"`
 
 	Timestamp time.Time `json:"timestamp"`
-	
-	Latency string `json:"latency"`
 	
 	ApiKey string `json:"api_key"`
 	
