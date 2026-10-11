@@ -2,7 +2,6 @@ package config
 
 import (
 	"os"
-	
 )
 
 type Config struct {
@@ -39,7 +38,7 @@ func Load() *Config {
 		GoogleClientSecret:    getEnv("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURL:     getEnv("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/google/callback"),
 		GoogleFrontendURL:     getEnv("GOOGLE_FRONTEND_URL", "http://localhost:3000"),
-		KiviaApiKey:          getEnv("KIVIA_API_KEY", ""),
+		KiviaApiKey:           getEnv("KIVIA_API_KEY", ""),
 	}
 
 }

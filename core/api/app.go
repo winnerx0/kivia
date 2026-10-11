@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
+	kiviasdk "github.com/winnerx0/kivia-sdk-go"
 	apikey "github.com/winnerx0/kivia/internal/api_key"
 	"github.com/winnerx0/kivia/internal/auth"
 	"github.com/winnerx0/kivia/internal/config"
@@ -84,6 +85,10 @@ func NewServer(cfg config.Config) *Server {
 		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowCredentials: false,
 	}))
+
+	kivia := kiviasdk.NewClient(cfg.KiviaApiKey)
+	
+	app.Use(kivia.FiberLog())
 
 	app.Get("/health", func(c fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
