@@ -72,7 +72,7 @@ export default function AppSidebar() {
             className="rounded-lg shrink-0"
           />
           {!collapsed && (
-            <span className="text-base font-display font-bold tracking-tight text-sidebar-foreground">
+            <span className="text-base font-display font-medium tracking-tight text-sidebar-foreground">
               Kivia
             </span>
           )}
@@ -97,11 +97,6 @@ export default function AppSidebar() {
 
       {/* Nav */}
       <nav className={cn("flex-1 space-y-1 py-4", collapsed ? "px-2" : "px-3")}>
-        {!collapsed && (
-          <p className="px-3 pb-2.5 text-[11px] font-display font-semibold uppercase tracking-widest text-muted-foreground/50">
-            Menu
-          </p>
-        )}
         {navItems.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/dashboard" || href === "/settings"
@@ -113,17 +108,17 @@ export default function AppSidebar() {
               href={href}
               title={collapsed ? label : undefined}
               className={cn(
-                "flex items-center rounded-lg text-sm font-medium transition-all",
+                "flex items-center rounded-md text-sm font-medium transition-colors",
                 collapsed
                   ? "justify-center h-10 w-full"
-                  : "gap-3 px-3 py-2 border-l-2",
+                  : "gap-3 px-3 py-1.5",
                 active
                   ? collapsed
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "bg-sidebar-accent text-sidebar-accent-foreground border-sidebar-foreground shadow-sm"
+                    : "bg-sidebar-accent text-sidebar-accent-foreground"
                   : collapsed
                     ? "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground border-transparent"
+                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />

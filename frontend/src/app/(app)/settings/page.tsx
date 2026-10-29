@@ -117,8 +117,8 @@ export default function SettingsPage() {
 
   return (
     <div className="p-6 md:p-10 w-full flex flex-col">
-      <div className="mb-8 w-full animate-fade-in-up">
-        <h1 className="font-display text-2xl font-bold tracking-tight">
+      <div className="mb-8 w-full">
+        <h1 className="font-display text-2xl font-medium">
           Settings
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
@@ -127,8 +127,8 @@ export default function SettingsPage() {
       </div>
 
       <div
-        className="space-y-6 max-w-2xl self-center w-full animate-fade-in-up"
-        style={{ animationDelay: "80ms" }}
+        className="space-y-6 max-w-2xl self-center w-full"
+       
       >
         <Card>
           <CardContent className="pt-4">

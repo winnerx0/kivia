@@ -345,7 +345,7 @@ function ApiKeysTab({ projectId }: { projectId: string }) {
           ))}
         </div>
       ) : apiKeys.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 py-14 text-center">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-transparent py-14 text-center">
           <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-muted">
             <KeyRound className="h-5 w-5 text-muted-foreground" />
           </div>
@@ -365,16 +365,16 @@ function ApiKeysTab({ projectId }: { projectId: string }) {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="font-display font-semibold text-xs uppercase tracking-wider">
+                <TableHead className="font-medium text-xs text-muted-foreground">
                   Environment
                 </TableHead>
-                <TableHead className="font-display font-semibold text-xs uppercase tracking-wider">
+                <TableHead className="font-medium text-xs text-muted-foreground">
                   Status
                 </TableHead>
-                <TableHead className="font-display font-semibold text-xs uppercase tracking-wider">
+                <TableHead className="font-medium text-xs text-muted-foreground">
                   Created
                 </TableHead>
-                <TableHead className="text-right font-display font-semibold text-xs uppercase tracking-wider">
+                <TableHead className="text-right font-medium text-xs text-muted-foreground">
                   Actions
                 </TableHead>
               </TableRow>
@@ -638,7 +638,7 @@ function RequestStatusChart({
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <p className="text-xs font-medium text-muted-foreground">
           Requests per day by status
         </p>
         <div className="flex gap-4">
@@ -1043,7 +1043,7 @@ function LogsTab({ projectId }: { projectId: string }) {
       <div className="rounded-xl border bg-card px-5 py-4 mb-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <p className="text-xs font-medium text-muted-foreground">
               Chart range
             </p>
           </div>
@@ -1302,7 +1302,7 @@ function LogsTab({ projectId }: { projectId: string }) {
           ))}
         </div>
       ) : logs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 py-14 text-center">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-transparent py-14 text-center">
           <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-muted">
             <Activity className="h-5 w-5 text-muted-foreground" />
           </div>
@@ -1319,22 +1319,22 @@ function LogsTab({ projectId }: { projectId: string }) {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30 hover:bg-muted/30">
-                  <TableHead className="font-display font-semibold text-xs uppercase tracking-wider">
+                  <TableHead className="font-medium text-xs text-muted-foreground">
                     Path
                   </TableHead>
-                  <TableHead className="font-display font-semibold text-xs uppercase tracking-wider">
+                  <TableHead className="font-medium text-xs text-muted-foreground">
                     Status
                   </TableHead>
-                  <TableHead className="font-display font-semibold text-xs uppercase tracking-wider">
+                  <TableHead className="font-medium text-xs text-muted-foreground">
                     API Key
                   </TableHead>
-                  <TableHead className="font-display font-semibold text-xs uppercase tracking-wider">
+                  <TableHead className="font-medium text-xs text-muted-foreground">
                     Location
                   </TableHead>
-                  <TableHead className="font-display font-semibold text-xs uppercase tracking-wider">
+                  <TableHead className="font-medium text-xs text-muted-foreground">
                     Latency
                   </TableHead>
-                  <TableHead className="font-display font-semibold text-xs uppercase tracking-wider">
+                  <TableHead className="font-medium text-xs text-muted-foreground">
                     Timestamp
                   </TableHead>
                 </TableRow>
@@ -1472,7 +1472,7 @@ export default function ProjectDetailPage() {
       <div className="flex flex-1 flex-col items-center justify-center p-6 md:p-10 w-full min-h-[calc(100vh-4rem)]">
         <div className="flex flex-col items-center text-center max-w-md">
           <div className="relative mb-6">
-            <p className="text-[8rem] leading-none font-display font-black tracking-tighter text-primary/10 select-none">
+            <p className="text-[8rem] leading-none font-display font-medium tracking-tighter text-primary/10 select-none">
               404
             </p>
             <p className="absolute inset-0 flex items-center justify-center text-5xl font-display font-bold tracking-tighter text-primary">
@@ -1484,7 +1484,7 @@ export default function ProjectDetailPage() {
             <FolderX className="h-6 w-6 text-muted-foreground" />
           </div>
 
-          <h1 className="font-display text-xl font-bold tracking-tight">
+          <h1 className="font-display text-xl font-medium">
             Project not found
           </h1>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
@@ -1515,7 +1515,7 @@ export default function ProjectDetailPage() {
   return (
     <div className="p-6 md:p-10 w-full">
       {/* Header */}
-      <div className="mb-6 flex items-start justify-between gap-4 animate-fade-in-up">
+      <div className="mb-6 flex items-start justify-between gap-4">
         {loadingProject ? (
           <div>
             <Skeleton className="h-7 w-48 mb-1.5" />
@@ -1523,7 +1523,7 @@ export default function ProjectDetailPage() {
           </div>
         ) : (
           <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight">
+            <h1 className="font-display text-2xl font-medium">
               {project?.name ?? "Project"}
             </h1>
             {project && (
@@ -1578,8 +1578,8 @@ export default function ProjectDetailPage() {
 
       {/* Tabs */}
       <div
-        className="mb-6 flex gap-1 rounded-lg bg-muted/40 p-1 w-fit animate-fade-in-up"
-        style={{ animationDelay: "80ms" }}
+        className="mb-6 flex gap-1 rounded-lg bg-muted/40 p-1 w-fit"
+       
       >
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
@@ -1598,7 +1598,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Tab content */}
-      <div className="animate-fade-in-up" style={{ animationDelay: "160ms" }}>
+      <div className="animate-fade-in-up">
         {activeTab === "api-keys" ? (
           <ApiKeysTab projectId={projectId} />
         ) : (

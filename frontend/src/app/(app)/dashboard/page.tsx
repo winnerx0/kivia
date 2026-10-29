@@ -20,14 +20,14 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 md:p-10 w-full">
-      <div className="mb-8 animate-fade-in-up">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Dashboard</h1>
+      <div className="mb-8 ">
+        <h1 className="font-display text-2xl font-medium">Dashboard</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Welcome back. Here&apos;s an overview of your API observability.
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-fade-in-up" style={{ animationDelay: "80ms" }}>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 " style={{ animationDelay: "80ms" }}>
         {isLoading ? (
           <>
             <StatCardSkeleton />
@@ -54,7 +54,7 @@ export default function DashboardPage() {
       </div>
 
       {!isLoading && projects.length === 0 && (
-        <div className="mt-10 rounded-xl border border-dashed bg-muted/20 px-8 py-14 text-center animate-fade-in-up" style={{ animationDelay: "160ms" }}>
+        <div className="mt-10 rounded-xl border border-dashed bg-muted/20 px-8 py-14 text-center " style={{ animationDelay: "160ms" }}>
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-muted">
             <FolderOpen className="h-6 w-6 text-muted-foreground" />
           </div>
@@ -72,9 +72,9 @@ export default function DashboardPage() {
       )}
 
       {!isLoading && projects.length > 0 && (
-        <div className="mt-8 animate-fade-in-up" style={{ animationDelay: "160ms" }}>
+        <div className="mt-8 " style={{ animationDelay: "160ms" }}>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-display font-semibold text-muted-foreground uppercase tracking-wider">
+            <h2 className="text-sm font-medium text-muted-foreground">
               Recent Projects
             </h2>
             <Link
@@ -144,7 +144,7 @@ function StatCard({
 }) {
   const colors = colorMap[color];
   return (
-    <Card className="border bg-card shadow-sm hover:shadow-md transition-shadow">
+    <Card className="border bg-card shadow-none transition-colors hover:border-white/15">
       <CardContent className="pt-6">
         <div className="flex items-start justify-between mb-4">
           <div
@@ -153,7 +153,7 @@ function StatCard({
             <Icon className={`h-5 w-5 ${colors.icon}`} />
           </div>
         </div>
-        <div className="font-display text-3xl font-bold tracking-tight tabular-nums mb-1">
+        <div className="font-display text-4xl font-medium tabular-nums mb-1">
           {value}
         </div>
         <p className="text-sm font-medium text-foreground">{title}</p>

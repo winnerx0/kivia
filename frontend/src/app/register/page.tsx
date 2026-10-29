@@ -54,28 +54,28 @@ export default function RegisterPage() {
     <GuestGuard>
     <div className="flex min-h-screen">
       {/* Left branding panel */}
-      <div className="hidden lg:flex lg:w-[45%] relative flex-col justify-between bg-[oklch(0.145_0_0)] px-12 py-10 text-[oklch(0.985_0_0)] overflow-hidden">
+      <div className="hidden lg:flex lg:w-[45%] relative flex-col justify-between bg-sidebar border-r border-border px-12 py-10 text-foreground overflow-hidden">
         {/* Decorative elements */}
-        <div className="pointer-events-none absolute -top-32 -right-32 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+        <div className="pointer-events-none absolute -top-32 -right-32 h-80 w-80 rounded-full bg-chart-1/15 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-white/5 blur-3xl" />
         <div className="pointer-events-none absolute inset-0 dot-grid opacity-[0.15]" />
 
         <div className="relative z-10">
           <Link href="/" className="inline-flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 transition-colors group-hover:bg-white/20">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.06] transition-colors group-hover:bg-white/20">
               <Zap className="h-5 w-5" />
             </div>
-            <span className="text-xl font-display font-bold tracking-tight">Kivia</span>
+            <span className="text-lg font-display font-medium tracking-tight">Kivia</span>
           </Link>
         </div>
 
         <div className="relative z-10">
-          <h1 className="font-display text-4xl font-bold tracking-tight leading-[1.15] mb-3">
+          <h1 className="font-display text-4xl font-medium leading-[1.1] mb-3">
             Start monitoring
             <br />
             in minutes.
           </h1>
-          <p className="text-white/55 text-base mb-10 max-w-sm leading-relaxed">
+          <p className="text-muted-foreground text-base mb-10 max-w-sm leading-relaxed">
             Create your free account and get complete API observability with
             just a few lines of code.
           </p>
@@ -83,14 +83,14 @@ export default function RegisterPage() {
             {features.map(({ icon: Icon, title, description }) => (
               <div
                 key={title}
-                className="flex items-start gap-3.5 rounded-xl bg-white/[0.07] p-3.5 backdrop-blur-sm"
+                className="flex items-start gap-3.5 rounded-xl border border-border bg-white/[0.03] p-3.5"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/15">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.06]">
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold">{title}</p>
-                  <p className="text-xs text-white/50 mt-0.5 leading-relaxed">
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                     {description}
                   </p>
                 </div>
@@ -99,7 +99,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <p className="relative z-10 text-xs text-white/25">
+        <p className="relative z-10 text-xs text-muted-foreground/60">
           &copy; {new Date().getFullYear()} Kivia. All rights reserved.
         </p>
       </div>
@@ -121,7 +121,7 @@ export default function RegisterPage() {
         <div className="flex flex-1 items-center justify-center px-6 pb-12">
           <div className="w-full max-w-sm animate-fade-in-up">
             <div className="mb-8">
-              <h2 className="font-display text-2xl font-bold tracking-tight">
+              <h2 className="font-display text-2xl font-medium">
                 Create an account
               </h2>
               <p className="text-muted-foreground text-sm mt-1.5">
@@ -179,7 +179,7 @@ export default function RegisterPage() {
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
+              <div className="relative flex justify-center text-xs">
                 <span className="bg-background px-2 text-muted-foreground">or</span>
               </div>
             </div>
@@ -215,7 +215,7 @@ export default function RegisterPage() {
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="text-primary font-medium underline-offset-4 hover:underline"
+                className="text-foreground font-medium underline underline-offset-4 hover:text-foreground/80"
               >
                 Sign in
               </Link>

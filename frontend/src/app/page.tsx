@@ -63,7 +63,7 @@ function TerminalWindow({
           </span>
         </div>
         {meta && (
-          <span className="hidden sm:inline font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">
+          <span className="hidden sm:inline font-mono text-[10px]  text-muted-foreground/70">
             {meta}
           </span>
         )}
@@ -97,7 +97,7 @@ function CodeFrame({
           </div>
           <span className="text-[11px] text-foreground font-mono">{filename}</span>
         </div>
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">
+        <span className="font-mono text-[10px]  text-muted-foreground/70">
           {lang}
         </span>
       </div>
@@ -159,7 +159,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background text-foreground">
       {/* ── Navigation ────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 border-b border-border bg-background/75 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2.5 group">
               <img
@@ -172,8 +172,8 @@ export default function LandingPage() {
               <span className="text-lg font-display font-bold tracking-tight">
                 Kivia
               </span>
-              <span className="hidden md:inline-flex items-center font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground border border-border rounded px-1.5 py-0.5 ml-1">
-                v0.9 · beta
+              <span className="hidden md:inline-flex items-center text-xs text-muted-foreground border border-border rounded-full px-2 py-0.5 ml-1">
+                Beta
               </span>
             </Link>
             <div className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
@@ -213,10 +213,9 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/register"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-all shadow-lg shadow-foreground/10"
+              className="inline-flex h-8 items-center rounded-full bg-foreground px-4 text-sm font-medium text-background hover:bg-foreground/85 transition-colors"
             >
               Get started
-              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </div>
@@ -224,79 +223,58 @@ export default function LandingPage() {
 
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-border">
-        <div className="dot-grid pointer-events-none absolute inset-0 opacity-60" />
-        <div className="pointer-events-none absolute -top-40 left-1/2 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-foreground/[0.04] blur-[120px]" />
-        <div className="pointer-events-none absolute top-40 -left-32 h-[300px] w-[300px] rounded-full bg-chart-2/[0.05] blur-[80px]" />
+        <div className="hero-glow pointer-events-none absolute inset-0" />
+        <div className="hairline-grid pointer-events-none absolute inset-0" />
 
-        <div className="relative mx-auto max-w-7xl px-6 pt-20 pb-24 md:pt-28 md:pb-36">
-          {/* Headline */}
-          <div>
-            <p
-              className="mb-6 inline-flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.28em] text-muted-foreground animate-fade-in-up"
+        <div className="relative mx-auto max-w-4xl px-6 pt-24 pb-20 text-center md:pt-32">
+          <h1
+            className="font-display text-fade text-balance text-[clamp(2.75rem,7vw,5.5rem)] font-medium leading-[1.02] animate-fade-in-up"
+          >
+            Observability for
+            <br />
+            every API request
+          </h1>
+          <p
+            className="mx-auto mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted-foreground animate-fade-in-up"
+            style={{ animationDelay: "80ms" }}
+          >
+            Kivia captures keys, latency, status codes and paths from your HTTP
+            servers and shows them in a live dashboard.
+          </p>
+          <div
+            className="mt-9 flex justify-center gap-3 animate-fade-in-up"
+            style={{ animationDelay: "140ms" }}
+          >
+            <Link
+              href="/register"
+              className="inline-flex h-10 items-center rounded-full bg-foreground px-5 text-sm font-medium text-background transition-colors hover:bg-foreground/85"
             >
-              <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              API observability platform · in public beta
-            </p>
-            <h1 className="font-display font-bold tracking-tight leading-[0.92] text-[clamp(3rem,11vw,9rem)]">
-              <span
-                className="block animate-fade-in-up text-foreground"
-                style={{ animationDelay: "60ms" }}
-              >
-                Observe
-              </span>
-              <span
-                className="block italic font-light text-foreground/50 animate-fade-in-up"
-                style={{ animationDelay: "140ms" }}
-              >
-                every
-              </span>
-              <span
-                className="block animate-fade-in-up text-foreground"
-                style={{ animationDelay: "220ms" }}
-              >
-                request
-                <span className="inline-flex translate-y-[-0.15em] ml-3 align-middle">
-                  <span className="relative flex h-3 w-3">
-                    <span className="absolute inset-0 rounded-full bg-emerald-400/60 animate-ping" />
-                    <span className="relative h-3 w-3 rounded-full bg-emerald-400" />
-                  </span>
-                </span>
-              </span>
-            </h1>
-          </div>
-
-          {/* Sub-copy + CTAs */}
-          <div className="mt-12 grid grid-cols-12 gap-6 md:gap-10 border-t border-dashed border-border pt-8">
-            <p
-              className="col-span-12 lg:col-span-7 text-lg leading-relaxed text-muted-foreground md:text-xl animate-fade-in-up"
-              style={{ animationDelay: "500ms" }}
+              Get started
+            </Link>
+            <button
+              onClick={() => scrollTo("how-it-works")}
+              className="inline-flex h-10 items-center rounded-full border border-border bg-white/[0.03] px-5 text-sm font-medium text-foreground transition-colors hover:bg-white/[0.07]"
             >
-              Kivia is a lightweight platform that captures every HTTP request
-              your APIs serve — keys, latency, status codes, paths — and
-              surfaces them in a live dashboard you can read at a glance.
-            </p>
-            <div
-              className="col-span-12 lg:col-span-5 lg:justify-self-end flex flex-col sm:flex-row gap-3 self-end animate-fade-in-up"
-              style={{ animationDelay: "560ms" }}
-            >
-              <Link
-                href="/register"
-                className="group inline-flex items-center gap-2 rounded-xl bg-foreground px-7 py-3.5 text-base font-medium text-background hover:bg-foreground/90 transition-all shadow-xl shadow-foreground/10 hover:-translate-y-0.5"
-              >
-                Get started free
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-              <button
-                onClick={() => scrollTo("how-it-works")}
-                className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-7 py-3.5 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all backdrop-blur-sm"
-              >
-                See the pipeline
-                <ArrowUpRight className="h-4 w-4" />
-              </button>
-            </div>
+              See how it works
+            </button>
           </div>
         </div>
 
+        <div
+          className="relative mx-auto max-w-4xl px-6 pb-24 animate-fade-in-up"
+          style={{ animationDelay: "220ms" }}
+        >
+          <TerminalWindow title="live requests" className="shadow-[0_0_80px_-20px_oklch(1_0_0/8%)]">
+            <pre className="text-[12.5px] leading-7 text-muted-foreground">
+              <code>
+{`POST /auth/login             `}<span className="text-emerald-400">200</span>{`   45ms
+GET  /api/v1/projects/all    `}<span className="text-emerald-400">200</span>{`   12ms
+POST /api/v1/logs/create     `}<span className="text-emerald-400">201</span>{`    8ms
+GET  /api/v1/logs/missing    `}<span className="text-amber-300">404</span>{`    3ms`}
+              </code>
+            </pre>
+          </TerminalWindow>
+        </div>
       </section>
 
       {/* ── Features ──────────────────────────────────────────────────── */}
@@ -304,10 +282,10 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
           <div className="mb-16 grid grid-cols-12 gap-6 md:gap-10">
             <div className="col-span-12 lg:col-span-7">
-              <h2 className="font-display text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl text-foreground leading-[1.02]">
+              <h2 className="font-display text-4xl font-medium sm:text-5xl text-foreground leading-[1.05]">
                 A first-class
                 <br />
-                <span className="italic font-light text-foreground/60">developer</span>
+                <span className="text-muted-foreground">developer</span>
                 <span> experience.</span>
               </h2>
             </div>
@@ -381,7 +359,7 @@ internal-tools    1 key       456 reqs`,
                   span
                 )}
               >
-                <div className="absolute right-5 top-5 font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground/60">
+                <div className="absolute right-5 top-5 font-mono text-[10px]  text-muted-foreground/60">
                   / {num}
                 </div>
                 <div className="flex items-start gap-4 mb-5">
@@ -389,7 +367,7 @@ internal-tools    1 key       456 reqs`,
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="pr-10">
-                    <h3 className="font-display text-xl font-semibold text-foreground tracking-tight">
+                    <h3 className="font-display text-lg font-medium text-foreground tracking-tight">
                       {title}
                     </h3>
                     <p className="mt-1 text-sm text-muted-foreground leading-relaxed max-w-md">
@@ -415,10 +393,10 @@ internal-tools    1 key       456 reqs`,
       >
         <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
           <div className="mb-20 grid grid-cols-12 gap-6 md:gap-10">
-            <h2 className="col-span-12 lg:col-span-8 font-display text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl text-foreground leading-[1.02]">
+            <h2 className="col-span-12 lg:col-span-8 font-display text-4xl font-medium sm:text-5xl text-foreground leading-[1.05]">
               Up and running
               <br />
-              <span className="italic font-light text-foreground/60">in minutes,</span>
+              <span className="text-muted-foreground">in minutes,</span>
               <span> not days.</span>
             </h2>
           </div>
@@ -461,7 +439,7 @@ internal-tools    1 key       456 reqs`,
               ].map(({ step, icon: Icon, title, description, highlight }) => (
                 <div key={step} className="group relative">
                   {/* sequence header */}
-                  <div className="mb-4 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+                  <div className="mb-4 flex items-center justify-between font-mono text-[10px]  text-muted-foreground">
                     <span className="text-foreground">{pad(step)}</span>
                     <span>{step < 4 ? "→ next" : "● final"}</span>
                   </div>
@@ -469,7 +447,7 @@ internal-tools    1 key       456 reqs`,
                   <div className="relative z-10 mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-background ring-4 ring-background transition-all group-hover:border-foreground group-hover:scale-105">
                     <Icon className="h-6 w-6 text-foreground" />
                   </div>
-                  <h3 className="font-display text-xl font-semibold text-foreground tracking-tight mb-1.5">
+                  <h3 className="font-display text-lg font-medium text-foreground tracking-tight mb-1.5">
                     {title}
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-[260px]">
@@ -492,12 +470,12 @@ internal-tools    1 key       456 reqs`,
         <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
           <div className="grid grid-cols-12 gap-6 md:gap-10">
             <div className="col-span-12 lg:col-span-5">
-              <h2 className="font-display text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl text-foreground leading-[1.02]">
+              <h2 className="font-display text-4xl font-medium sm:text-5xl text-foreground leading-[1.05]">
                 Drop-in
                 <br />
                 middleware for
                 <br />
-                <span className="italic font-light text-foreground/60">any backend.</span>
+                <span className="text-muted-foreground">any backend.</span>
               </h2>
               <p className="mt-6 text-muted-foreground text-base leading-relaxed max-w-md">
                 Lightweight SDKs that wrap your existing HTTP handlers. No
@@ -514,7 +492,7 @@ internal-tools    1 key       456 reqs`,
                     key={item}
                     className="flex items-center gap-4 border-t border-dashed border-border py-3 text-sm last:border-b"
                   >
-                    <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground w-8">
+                    <span className="font-mono text-[10px]  text-muted-foreground w-8">
                       {pad(i + 1)}
                     </span>
                     <Plus className="h-3.5 w-3.5 text-foreground/40" />
@@ -543,7 +521,7 @@ internal-tools    1 key       456 reqs`,
                     </button>
                   ))}
                 </div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground hidden sm:inline">
+                <span className="font-mono text-[10px]  text-muted-foreground hidden sm:inline">
                   {SDK_LINES[sdkLang]} lines · {SDK_FILES[sdkLang]}
                 </span>
               </div>
@@ -856,10 +834,10 @@ internal-tools    1 key       456 reqs`,
       <section id="capabilities" className="border-b border-border">
         <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
           <div className="mb-16 grid grid-cols-12 gap-6 md:gap-10">
-            <h2 className="col-span-12 lg:col-span-9 font-display text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl text-foreground leading-[1.02]">
+            <h2 className="col-span-12 lg:col-span-9 font-display text-4xl font-medium sm:text-5xl text-foreground leading-[1.05]">
               Everything you need.
               <br />
-              <span className="italic font-light text-foreground/60">Nothing</span>
+              <span className="text-muted-foreground">Nothing</span>
               <span> you don&apos;t.</span>
             </h2>
           </div>
@@ -913,7 +891,7 @@ internal-tools    1 key       456 reqs`,
                 key={title}
                 className="group grid grid-cols-12 gap-4 md:gap-6 items-start border-b border-border py-7 md:py-8 transition-colors hover:bg-muted/15"
               >
-                <div className="col-span-2 md:col-span-1 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.24em] text-muted-foreground pt-1">
+                <div className="col-span-2 md:col-span-1 flex items-center gap-3 font-mono text-[11px]  text-muted-foreground pt-1">
                   {pad(i + 1)}
                 </div>
                 <div className="col-span-2 md:col-span-1">
@@ -922,7 +900,7 @@ internal-tools    1 key       456 reqs`,
                   </div>
                 </div>
                 <div className="col-span-8 md:col-span-6">
-                  <h3 className="font-display text-xl font-semibold text-foreground tracking-tight">
+                  <h3 className="font-display text-lg font-medium text-foreground tracking-tight">
                     {title}
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
@@ -930,7 +908,7 @@ internal-tools    1 key       456 reqs`,
                   </p>
                 </div>
                 <div className="col-span-12 md:col-span-3 md:text-right">
-                  <span className="inline-flex items-center font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground border border-border rounded-md px-2.5 py-1">
+                  <span className="inline-flex items-center font-mono text-[11px]  text-muted-foreground border border-border rounded-md px-2.5 py-1">
                     {tag}
                   </span>
                 </div>
@@ -973,13 +951,13 @@ internal-tools    1 key       456 reqs`,
                   className="relative bg-background p-8 md:p-10 group hover:bg-card/40 transition-colors"
                 >
                   <div className="flex items-start justify-between mb-6">
-                    <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+                    <span className="font-mono text-[10px]  text-muted-foreground">
                       {pad(i + 1)} / 03
                     </span>
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   </div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="font-display text-6xl md:text-7xl font-bold tracking-tight text-foreground tabular-nums">
+                    <span className="font-display text-5xl md:text-6xl font-medium text-foreground tabular-nums">
                       {value}
                     </span>
                     <span className="font-display text-2xl md:text-3xl font-light text-foreground/50">
@@ -1013,26 +991,26 @@ internal-tools    1 key       456 reqs`,
             <span aria-hidden className="absolute -bottom-2 -right-2 h-5 w-5 border-b border-r border-foreground/40" />
 
             <div className="px-4 py-12 md:px-12 md:py-16 text-center">
-              <p className="font-mono text-[11px] uppercase tracking-[0.32em] text-muted-foreground mb-8">
+              <p className="text-sm text-muted-foreground mb-6">
                 / Begin transmission
               </p>
-              <h2 className="font-display font-bold tracking-tight leading-[0.95] text-[clamp(2.5rem,9vw,7rem)] text-foreground">
+              <h2 className="font-display font-medium leading-[1.02] text-[clamp(2.5rem,6vw,4.5rem)] text-fade text-foreground">
                 Ready to see what
                 <br />
-                <span className="italic font-light text-foreground/60">your APIs</span>{" "}
+                <span className="text-muted-foreground">your APIs</span>{" "}
                 are doing?
               </h2>
               <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                 <Link
                   href="/register"
-                  className="group inline-flex items-center gap-2 rounded-xl bg-foreground px-8 py-3.5 text-base font-medium text-background hover:bg-foreground/90 transition-all shadow-xl shadow-foreground/10 hover:-translate-y-0.5"
+                  className="group inline-flex items-center gap-2 rounded-full bg-foreground px-6 h-11 text-sm font-medium text-background hover:bg-foreground/85 transition-colors"
                 >
                   Create free account
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-8 py-3.5 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all backdrop-blur-sm"
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-white/[0.03] px-6 h-11 text-sm font-medium text-foreground hover:bg-white/[0.07] transition-colors"
                 >
                   Sign in
                 </Link>
@@ -1055,8 +1033,8 @@ internal-tools    1 key       456 reqs`,
                   height={28}
                   className="rounded-md"
                 />
-                <span className="font-display font-bold text-lg">Kivia</span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground border border-border rounded px-1.5 py-0.5">
+                <span className="font-display font-medium text-lg">Kivia</span>
+                <span className="font-mono text-[10px]  text-muted-foreground border border-border rounded px-1.5 py-0.5">
                   v0.9 · beta
                 </span>
               </div>
@@ -1068,7 +1046,7 @@ internal-tools    1 key       456 reqs`,
             </div>
 
             <div className="lg:col-span-2 lg:col-start-7">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground mb-4">
+              <p className="font-mono text-[10px] font-semibold  text-foreground mb-4">
                 Product
               </p>
               <ul className="space-y-2.5 text-sm text-muted-foreground">
@@ -1108,7 +1086,7 @@ internal-tools    1 key       456 reqs`,
             </div>
 
             <div className="lg:col-span-2">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground mb-4">
+              <p className="font-mono text-[10px] font-semibold  text-foreground mb-4">
                 Resources
               </p>
               <ul className="space-y-2.5 text-sm text-muted-foreground">
@@ -1126,7 +1104,7 @@ internal-tools    1 key       456 reqs`,
             </div>
 
             <div className="lg:col-span-2">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.28em] text-foreground mb-4">
+              <p className="font-mono text-[10px] font-semibold  text-foreground mb-4">
                 Legal
               </p>
               <ul className="space-y-2.5 text-sm text-muted-foreground/60">
@@ -1136,7 +1114,7 @@ internal-tools    1 key       456 reqs`,
             </div>
           </div>
 
-          <div className="mt-14 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground/60">
+          <div className="mt-14 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 font-mono text-[10px]  text-muted-foreground/60">
             <p>© {new Date().getFullYear()} · Kivia · all rights reserved</p>
             <p>Built for developers who care about their APIs.</p>
           </div>

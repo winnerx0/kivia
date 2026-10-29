@@ -82,9 +82,9 @@ export default function ProjectsPage() {
 
   return (
     <div className="p-6 md:p-10 w-full">
-      <div className="mb-8 flex items-center justify-between animate-fade-in-up">
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">Projects</h1>
+          <h1 className="font-display text-2xl font-medium">Projects</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Manage and monitor your API projects
           </p>
@@ -182,7 +182,7 @@ export default function ProjectsPage() {
           ))}
         </div>
       ) : projects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 py-20 text-center animate-fade-in-up" style={{ animationDelay: "80ms" }}>
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-transparent py-20 text-center">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
             <FolderOpen className="h-7 w-7 text-muted-foreground" />
           </div>
@@ -197,11 +197,11 @@ export default function ProjectsPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 animate-fade-in-up" style={{ animationDelay: "80ms" }}>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
             <div
               key={project.id}
-              className="group relative rounded-xl border bg-card p-5 hover:border-primary/30 hover:shadow-md hover:shadow-primary/[0.03] transition-all h-full flex flex-col"
+              className="group relative rounded-xl border bg-card p-5 hover:border-white/15 hover:bg-card/80 transition-colors h-full flex flex-col"
             >
               <Link
                 href={`/projects/${project.id}`}

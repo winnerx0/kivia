@@ -116,7 +116,7 @@ function VerifyOTPInner() {
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-colors group-hover:bg-primary/90">
                 <Zap className="h-5 w-5" />
               </div>
-              <span className="text-xl font-display font-bold tracking-tight">Kivia</span>
+              <span className="text-lg font-display font-medium tracking-tight">Kivia</span>
             </Link>
           </div>
 
@@ -126,7 +126,7 @@ function VerifyOTPInner() {
                 <Mail className="h-6 w-6 text-primary" />
               </div>
             </div>
-            <h2 className="font-display text-2xl font-bold tracking-tight">
+            <h2 className="font-display text-2xl font-medium">
               Verify your email
             </h2>
             <p className="text-muted-foreground text-sm mt-1.5">
@@ -164,7 +164,7 @@ function VerifyOTPInner() {
                 type="button"
                 onClick={handleResend}
                 disabled={resending || cooldown > 0}
-                className="text-primary font-medium underline-offset-4 hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
+                className="text-foreground font-medium underline underline-offset-4 hover:text-foreground/80 disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed"
               >
                 {cooldown > 0 ? `Resend in ${cooldown}s` : resending ? "Sending..." : "Resend code"}
               </button>
@@ -174,7 +174,7 @@ function VerifyOTPInner() {
           <p className="text-sm text-muted-foreground text-center mt-4">
             <Link
               href="/register"
-              className="text-primary font-medium underline-offset-4 hover:underline"
+              className="text-foreground font-medium underline underline-offset-4 hover:text-foreground/80"
             >
               Back to register
             </Link>
