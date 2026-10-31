@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"log/slog"
+	"net/http"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -92,6 +93,14 @@ func NewServer(cfg config.Config) *Server {
 
 	app.Get("/health", func(c fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusOK)
+	})
+
+	app.Get("/test/with-middleware", kivia.FiberLog(), func(c fiber.Ctx) error {
+		return c.SendStatus(http.StatusOK)
+	})
+
+	app.Get("/test/without-middleware", func(c fiber.Ctx) error {
+		return c.SendStatus(http.StatusOK)
 	})
 
 	api := app.Group("/api")
